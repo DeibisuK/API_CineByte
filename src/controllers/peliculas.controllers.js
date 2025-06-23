@@ -1,27 +1,8 @@
 import { pool } from '../db.js';
 
 export const getPeliculas = async (req, res) => {
-    const result = await pool.query('SELECT * FROM peliculas');
-    const peliculasConImagen = result.rows.map(pelicula => {
-        let imagenBase64 = null;
-
-        if (pelicula.imagen) {
-            // Asumimos que 'imagen' es un Buffer (PostgreSQL BYTEA)
-            imagenBase64 = pelicula.imagen.toString('base64');
-        }
-
-        return {
-            id_pelicula: pelicula.id_pelicula,
-            titulo: pelicula.titulo,
-            descripcion: pelicula.descripcion,
-            duracion_minutos: pelicula.duracion_minutos,
-            fecha_estreno: pelicula.fecha_estreno,
-            estado: pelicula.estado,
-            clasificacion: pelicula.clasificacion,
-            imagen: imagenBase64, // <-- incluimos base64 en el JSON
-        };
-    });
-    res.json(peliculasConImagen);
+    const {rows} = await pool.query('SELECT * FROM peliculas');
+        res.json(rows);
 };
 
 export const getPeliculaById = async (req, res) => {
