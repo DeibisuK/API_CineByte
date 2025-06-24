@@ -1,50 +1,47 @@
-import { pool } from '../db.js';
+import * as service from '../services/peliculas.service.js';
 
-export const getPeliculas = async (req, res) => {
-    const {rows} = await pool.query('SELECT * FROM peliculas');
-        res.json(rows);
-};
-
-export const getPeliculaById = async (req, res) => {
-    const { id } = req.params;
-    const { rows } = await pool.query('SELECT * FROM peliculas WHERE id_pelicula = $1', [id]);
-
-    if (rows.length === 0) {
-        return res.status(404).json({ message: "Pelicula not found" });
+export const getAll = async (req, res) => {
+    try {
+        const data = await service.getAllPeliculas();
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-    res.json(rows);
 };
 
-export const createPelicula = async (req, res) => {
-    const data = req.body;
-
-    await pool.query('INSERT INTO peliculas (titulo,descripcion,duracion_minutos,fecha_estreno, estado,clasificacion,imagen) VALUES ($1, $2, $3, $4, $5, $6, $7);'
-        , [data.titulo, data.descripcion, data.duracion_minutos, data.fecha_estreno, data.estado, data.clasificacion, data.imagen]
-    );
-    res.json({ message: "Pelicula created successfully!" });
+export const getById = async (req, res) => {
+  try {
+    const data = await service.getPeliculaById(req.params.id);
+    if (!data) return res.status(404).json({ error: 'Pelicula no encontrada' });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
-export const deletePelicula = async (req, res) => {
-    const { id } = req.params;
-    const { rowCount } = await pool.query('DELETE FROM peliculas WHERE id = $1', [id]);
-
-    if (rowCount === 0) {
-        return res.status(404).json({ message: "Pelicula not found" });
-    }
-    return res.json({ message: "Pelicula deleted successfully!" });
+export const create = async (req, res) => {
+  try {
+    const data = await service.createPelicula(req.body);
+    res.status(201).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
-export const updatePelicula = async (req, res) => {
-    const { id } = req.params;
-    const data = req.body;
+export const update = async (req, res) => {
+  try {
+    const data = await service.updatePelicula(req.params.id, req.body);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
-    const { rowCount } = await pool.query('UPDATE peliculas SET titulo = $1, descripcion = $2, duracion_minutos = $3, fecha_estreno = $4, estado = $5, clasificacion = $6, imagen = $7 WHERE id = $8',
-        [data.titulo, data.descripcion, data.duracion_minutos, data.fecha_estreno, data.estado, data.clasificacion, data.imagen, id]
-    )
-
-    if (rowCount === 0) {
-        return res.status(404).json({ message: "Pelicula not found" });
-    }
-
-    res.send(`Pelicula with ID ${id} updated successfully!`);
+export const remove = async (req, res) => {
+  try {
+    await service.deletePelicula(req.params.id);
+    res.json({ message: 'Pelicula eliminada' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };

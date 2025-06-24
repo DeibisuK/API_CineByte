@@ -1,46 +1,48 @@
-import { pool } from '../db.js';
+import * as service from '../services/etiquetas.service.js'
 
-export const getEtiquetas = async (req, res) => {
-    const { rows } = await pool.query('SELECT * FROM etiquetas');
-    res.json(rows);
-};
 
-export const getEtiquetaById = async (req, res) => {
-    const { id } = req.params;
-    const { rows } = await pool.query('SELECT * FROM etiquetas WHERE id = $1', [id]);
-
-    if (rows.length === 0) {
-        return res.status(404).json({ message: "Etiqueta not found" });
+export const getAll = async (req, res) => {
+    try {
+        const data = await service.getAllEtiquetas();
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-    res.json(rows);
 };
 
-export const createEtiqueta = async (req, res) => {
-    const data = req.body;
-    await pool.query('INSERT INTO etiquetas (nombre) VALUES ($1)', [data.nombre]);
-    res.send("Etiqueta created successfully!");
+export const getById = async (req, res) => {
+  try {
+    const data = await service.getEtiquetasById(req.params.id);
+    if (!data) return res.status(404).json({ error: 'Etiqueta no encontrada' });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
-export const deleteEtiqueta = async (req, res) => {
-    const { id } = req.params;
-    const { rowCount } = await pool.query('DELETE FROM etiquetas WHERE id = $1', [id]);
-
-    if (rowCount === 0) {
-        return res.status(404).json({ message: "Etiqueta not found" });
-    }
-
-    res.send(`Etiqueta with ID ${id} deleted successfully!`);
+export const create = async (req, res) => {
+  try {
+    const data = await service.createEtiquetas(req.body);
+    res.status(201).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
-export const updateEtiqueta = async (req, res) => {
-    const { id } = req.params;
-    const data = req.body;
+export const update = async (req, res) => {
+  try {
+    const data = await service.updateEtiquetas(req.params.id, req.body);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
-    const { rowCount } = await pool.query('UPDATE etiquetas SET nombre = $1 WHERE id = $2', [data.nombre, id]);
-
-    if (rowCount === 0) {
-        return res.status(404).json({ message: "Etiqueta not found" });
-    }
-
-    res.send(`Etiqueta with ID ${id} updated successfully!`);
+export const remove = async (req, res) => {
+  try {
+    await service.deleteEtiquetas(req.params.id);
+    res.json({ message: 'Etiquetas eliminada' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };

@@ -1,16 +1,11 @@
-import { Router } from "express";
-import { createPelicula, deletePelicula, getPeliculaById, getPeliculas, updatePelicula } from "../controllers/peliculas.controllers.js";
+import express from 'express';
+const router = express.Router();
+import * as controller from '../controllers/peliculas.controllers.js';
 
- const router = Router();
+router.get('/', controller.getAll);
+router.get('/:id', controller.getById);
+router.post('/', controller.create);
+router.put('/:id', controller.update);
+router.delete('/:id', controller.remove);
 
-router.get("/peliculas", getPeliculas);
-
-router.get("/peliculas/:id", getPeliculaById);
-
-router.post("/peliculas", createPelicula);
-
-router.delete("/peliculas/:id", deletePelicula);
-
-router.put("/peliculas/:id", updatePelicula);
-
- export default router;
+export default router;

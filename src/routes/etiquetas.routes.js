@@ -1,16 +1,11 @@
-import { Router } from "express";
-import { createEtiqueta, deleteEtiqueta, getEtiquetaById, getEtiquetas, updateEtiqueta } from "../controllers/etiquetas.controllers.js";
+import express from 'express';
+const router = express.Router();
+import * as controller from '../controllers/etiquetas.controllers.js';
 
-const router = Router();
-
-router.get("/etiquetas", getEtiquetas);
-
-router.get("/etiquetas/:id", getEtiquetaById);
-
-router.post("/etiquetas", createEtiqueta);
-
-router.delete("/etiquetas/:id", deleteEtiqueta);
-
-router.put("/etiquetas/:id", updateEtiqueta);
+router.get('/', controller.getAll);
+router.get('/:id', controller.getById);
+router.post('/', controller.create);
+router.put('/:id', controller.update);
+router.delete('/:id', controller.remove);
 
 export default router;
