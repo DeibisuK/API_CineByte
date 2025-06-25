@@ -1,12 +1,12 @@
 import * as service from '../services/peliculas.service.js';
 
 export const getAll = async (req, res) => {
-    try {
-        const data = await service.getAllPeliculas();
-        res.json(data);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+  try {
+    const data = await service.getAllPeliculas();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 export const getById = async (req, res) => {
@@ -18,7 +18,45 @@ export const getById = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+export const create = async (req, res) => {
+  try {
+    const {
+      titulo,
+      descripcion,
+      duracion_minutos,
+      fecha_estreno,
+      estado,
+      clasificacion,
+      imagen,
+      id_distribuidor,
+      idiomas,
+      generos,
+      actores,
+      etiquetas
+    } = req.body;
 
+    const data = await service.createPelicula({
+      titulo,
+      descripcion,
+      duracion_minutos,
+      fecha_estreno,
+      estado,
+      clasificacion,
+      imagen,
+      id_distribuidor,
+      idiomas,
+      generos,
+      actores,
+      etiquetas
+    });
+
+    res.status(201).json(data);
+  } catch (err) {
+    console.error('Error al crear película:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+/*
 export const create = async (req, res) => {
   try {
     const data = await service.createPelicula(req.body);
@@ -27,7 +65,7 @@ export const create = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
+*/
 export const update = async (req, res) => {
   try {
     const data = await service.updatePelicula(req.params.id, req.body);
