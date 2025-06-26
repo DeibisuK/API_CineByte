@@ -1,6 +1,6 @@
 import express from 'express';
 const router = express.Router();
-import * as controller from '../controllers/etiquetas.controllers.js';
+import * as controller from '../controllers/etiquetas.controller.js';
 
 router.get('/', controller.getAll);
 router.get('/:id', controller.getById);

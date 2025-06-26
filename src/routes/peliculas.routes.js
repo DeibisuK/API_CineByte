@@ -1,6 +1,6 @@
 import express from 'express';
 const router = express.Router();
-import * as controller from '../controllers/peliculas.controllers.js';
+import * as controller from '../controllers/peliculas.controller.js';
 
 router.get('/', controller.getAll);
 router.get('/:id', controller.getById);

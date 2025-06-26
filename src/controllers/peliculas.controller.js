@@ -19,6 +19,7 @@ export const getById = async (req, res) => {
   }
 };
 export const create = async (req, res) => {
+  console.log('BODY:', req.body); // Verifica si id_distribuidor está llegando
   try {
     const {
       titulo,
