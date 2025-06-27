@@ -1,12 +1,12 @@
 import * as service from '../services/generos.service.js';
 
 export const getAll = async (req, res) => {
-    try {
-        const data = await service.getAllGeneros();
-        res.json(data);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+  try {
+    const data = await service.getAllGeneros();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 export const getById = async (req, res) => {
@@ -38,9 +38,37 @@ export const update = async (req, res) => {
 };
 
 export const remove = async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) return res.status(400).json({ error: 'ID inválido' });
+
   try {
-    await service.deleteGenero(req.params.id);
-    res.json({ message: 'Genero eliminado' });
+    const generoEliminado = await GenerosService.eliminarGenero(id);
+
+    if (generoEliminado === null) {
+      return res.status(400).json({
+        error: 'No se puede eliminar el género porque tiene películas asociadas.'
+      });
+    }
+
+    res.status(200).json({
+      mensaje: 'Género eliminado correctamente',
+      genero: generoEliminado
+    });
+  } catch (err) {
+    console.error('Error en la eliminación:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
+export const getFilms = async (req, res) => {
+  try {
+    const generoId = parseInt(req.params.id);
+    if (isNaN(generoId)) {
+      return res.status(400).json({ error: 'ID de género inválido' });
+    }
+
+    const total = await service.getFilmsByGen(generoId);
+    res.json({ id_genero: generoId, total_peliculas: total });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
