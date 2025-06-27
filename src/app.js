@@ -6,6 +6,7 @@ import generosRoutes from './routes/generos.routes.js'
 import actoresRoutes from './routes/actores.routes.js' 
 import distribuidorRoutes from './routes/distribuidor.routes.js' 
 import idiomasRoutes from './routes/idiomas.routes.js' 
+import contactoRoutes from './routes/contacto.routes.js';
 import dotenv from 'dotenv';
 
 const app = express();
@@ -20,6 +21,7 @@ app.use('/api/etiquetas',etiquetasRoutes);
 app.use('/api/generos',generosRoutes);   
 app.use('/api/actores',actoresRoutes);   
 app.use('/api/distribuidor',distribuidorRoutes);   
-app.use('/api/idiomas',idiomasRoutes);   
+app.use('/api/idiomas',idiomasRoutes);
+app.use('/api', contactoRoutes);
 
 export default app;
