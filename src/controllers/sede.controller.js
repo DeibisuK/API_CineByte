@@ -2,7 +2,8 @@ import {
   crearSede as crearSedeService,
   getAllSedes,
   editarSede as editarSedeService,
-  eliminarSede as eliminarSedeService // <-- ESTA LÍNEA ES CLAVE
+  eliminarSede as eliminarSedeService,
+  getSedeById as getSedeByIdService
 } from '../services/sede.service.js';
 
 export const crearSede = async (req, res) => {
@@ -21,6 +22,20 @@ export const listarSedes = async (req, res) => {
     res.json(sedes);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener sedes' });
+  }
+};
+
+export const obtenerSedePorId = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const sede = await getSedeByIdService(id);
+    if (sede) {
+      res.json(sede);
+    } else {
+      res.status(404).json({ mensaje: 'Sede no encontrada' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener la sede' });
   }
 };
 

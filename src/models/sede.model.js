@@ -28,6 +28,12 @@ export const listarSedes = async () => {
   return result.rows;
 };
 
+export const getSedeById = async (id_sede) => {
+  const query = 'SELECT * FROM sedes WHERE id_sede = $1';
+  const result = await db.query(query, [id_sede]);
+  return result.rows[0];
+};
+
 export const editarSede = async (id_sede, datos) => {
   const { nombre, id_ciudad, direccion, estado, latitud, longitud, telefono, email } = datos;
   const query = `
