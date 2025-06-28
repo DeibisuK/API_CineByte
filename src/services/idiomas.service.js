@@ -13,9 +13,13 @@ export const createIdioma = async (data) => {
 };
 
 export const updateIdioma = async (id, data) => {
+  const existente = await model.findById(id);
+  if (!existente) return null;
   return await model.update(id, data);
 };
 
 export const deleteIdioma = async (id) => {
+  const tieneAsociaciones = await model.tienePeliculasAsociadas(id);
+  if (tieneAsociaciones) return null; // Bloquea si hay asociaciones
   return await model.remove(id);
 };

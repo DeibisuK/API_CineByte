@@ -2,12 +2,12 @@ import * as service from '../services/etiquetas.service.js'
 
 
 export const getAll = async (req, res) => {
-    try {
-        const data = await service.getAllEtiquetas();
-        res.json(data);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+  try {
+    const data = await service.getAllEtiquetas();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
 export const getById = async (req, res) => {
@@ -30,19 +30,47 @@ export const create = async (req, res) => {
 };
 
 export const update = async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { nombre } = req.body;
+
+  if (isNaN(id) || !nombre || nombre.trim() === '') {
+    return res.status(400).json({ error: 'ID o nombre inválido' });
+  }
+
   try {
-    const data = await service.updateEtiquetas(req.params.id, req.body);
-    res.json(data);
+    const actualizado = await service.updateEtiquetas(id, { nombre });
+    if (!actualizado) {
+      return res.status(404).json({ error: 'Etiqueta no encontrada' });
+    }
+
+    res.status(200).json({
+      mensaje: 'Etiqueta actualizada correctamente',
+      etiqueta: actualizado,
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error al actualizar la etiqueta:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
 
 export const remove = async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) return res.status(400).json({ error: 'ID inválido' });
+
   try {
-    await service.deleteEtiquetas(req.params.id);
-    res.json({ message: 'Etiquetas eliminada' });
+    const etiquetaEliminado = await service.deleteEtiquetas(id);
+
+    if (etiquetaEliminado === null) {
+      return res.status(400).json({
+        error: 'No se puede eliminar la etiqueta porque tiene películas asociadas.'
+      });
+    }
+    res.status(200).json({
+      mensaje: 'Etiqueta eliminada correctamente',
+      genero: etiquetaEliminado
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error en la eliminación:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 };

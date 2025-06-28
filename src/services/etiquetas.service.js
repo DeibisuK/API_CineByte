@@ -13,9 +13,13 @@ export const createEtiquetas = async (data) => {
 };
 
 export const updateEtiquetas = async (id, data) => {
+  const existente = await model.findById(id);
+  if (!existente) return null;
   return await model.update(id, data);
 };
 
 export const deleteEtiquetas = async (id) => {
-  return await model.remove(id);
+  const tieneAsociaciones = await model.tienePeliculasAsociadas(id);
+    if (tieneAsociaciones) return null; // Bloquea si hay asociaciones
+    return await model.remove(id);
 };

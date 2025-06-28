@@ -38,8 +38,6 @@ export const update = async (req, res) => {
 
   try {
     const actualizado = await service.updateGenero(id, { nombre });
-    console.log('2',id,nombre);
-    console.log('3',actualizado);
     if (!actualizado) {
       return res.status(404).json({ error: 'Género no encontrado' });
     }
@@ -74,19 +72,5 @@ export const remove = async (req, res) => {
   } catch (err) {
     console.error('Error en la eliminación:', err);
     res.status(500).json({ error: 'Error interno del servidor' });
-  }
-};
-
-export const getFilms = async (req, res) => {
-  try {
-    const generoId = parseInt(req.params.id);
-    if (isNaN(generoId)) {
-      return res.status(400).json({ error: 'ID de género inválido' });
-    }
-
-    const total = await service.getFilmsByGen(generoId);
-    res.json({ id_genero: generoId, total_peliculas: total });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
   }
 };
