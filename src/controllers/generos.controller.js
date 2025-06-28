@@ -42,7 +42,7 @@ export const remove = async (req, res) => {
   if (isNaN(id)) return res.status(400).json({ error: 'ID inválido' });
 
   try {
-    const generoEliminado = await GenerosService.eliminarGenero(id);
+    const generoEliminado = await service.eliminarGenero(id);
 
     if (generoEliminado === null) {
       return res.status(400).json({
