@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-
 import peliculasRoutes from './routes/peliculas.routes.js';
 import etiquetasRoutes from './routes/etiquetas.routes.js';
 import generosRoutes from './routes/generos.routes.js';
