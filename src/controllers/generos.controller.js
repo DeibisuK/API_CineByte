@@ -38,7 +38,8 @@ export const update = async (req, res) => {
 
   try {
     const actualizado = await service.updateGenero(id, { nombre });
-
+    console.log('2',id,nombre);
+    console.log('3',actualizado);
     if (!actualizado) {
       return res.status(404).json({ error: 'Género no encontrado' });
     }

@@ -14,8 +14,8 @@ export const createGenero = async (data) => {
 
 export const updateGenero = async (id, data) => {
   const existente = await model.findById(id);
+  console.log('4',existente);
   if (!existente) return null;
-
   // Actualizar el género
   return await model.update(id, data);
 };

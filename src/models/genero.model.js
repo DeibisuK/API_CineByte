@@ -18,9 +18,10 @@ export const insert = async ({ nombre }) => {
 
 export const update = async (id, { nombre }) => {
     const result = await db.query(
-        'UPDATE generos SET nombre = $1 WHERE id_genero = $2',
+        'UPDATE generos SET nombre = $1 WHERE id_genero = $2 RETURNING *',
         [nombre, id]
     );
+    console.log('1',result.rows[0]);
     return result.rows[0];
 }
 
