@@ -9,11 +9,11 @@ export const enviarCorreo = async ({ nombres, apellidos, telefono, email, cine, 
     }
   });
 
-const mailOptions = {
-  from: email,
-  to: 'garystevenbarreirozambrano@gmail.com',
-  subject: `Nuevo mensaje de contacto (${tipo})`,
-  html: `
+  const mailOptions = {
+    from: email,
+    to: 'garystevenbarreirozambrano@gmail.com',
+    subject: `Nuevo mensaje de contacto (${tipo})`,
+    html: `
     <div style="font-family: Arial, sans-serif; max-width: 540px; margin: auto; border: 1px solid #444; border-radius: 12px; padding: 28px; background:rgb(35, 35, 35);">
       <div style="text-align:center; margin-bottom: 18px;">
         <h1 style="color: #f7cb5a; margin: 0;">CineByte</h1>
@@ -59,7 +59,7 @@ const mailOptions = {
       </p>
     </div>
   `
-};
+  };
 
   return await transporter.sendMail(mailOptions);
 };
