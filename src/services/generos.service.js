@@ -13,6 +13,10 @@ export const createGenero = async (data) => {
 };
 
 export const updateGenero = async (id, data) => {
+  const existente = await model.findById(id);
+  if (!existente) return null;
+
+  // Actualizar el género
   return await model.update(id, data);
 };
 

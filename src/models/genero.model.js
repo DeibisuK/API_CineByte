@@ -21,6 +21,7 @@ export const update = async (id, { nombre }) => {
         'UPDATE generos SET nombre = $1 WHERE id_genero = $2',
         [nombre, id]
     );
+    return result.rows[0];
 }
 
 export const remove = async (id) => {
