@@ -21,3 +21,39 @@ export const crearSede = async ({
   const result = await db.query(query, values);
   return result.rows[0];
 };
+
+export const listarSedes = async () => {
+  const query = 'SELECT * FROM sedes ORDER BY id_ciudad';
+  const result = await db.query(query);
+  return result.rows;
+};
+
+export const editarSede = async (id_sede, datos) => {
+  const { nombre, id_ciudad, direccion, estado, latitud, longitud, telefono, email } = datos;
+  const query = `
+    UPDATE sedes SET
+      nombre = $1,
+      id_ciudad = $2,
+      direccion = $3,
+      estado = $4,
+      latitud = $5,
+      longitud = $6,
+      telefono = $7,
+      email = $8
+    WHERE id_sede = $9
+    RETURNING *;
+  `;
+  const values = [nombre, id_ciudad, direccion, estado, latitud, longitud, telefono, email, id_sede];
+  const result = await db.query(query, values);
+  return result.rows[0];
+};
+
+export const eliminarSede = async (id_sede) => {
+  try {
+    const query = 'DELETE FROM sedes WHERE id_sede = $1 RETURNING *;';
+    const result = await db.query(query, [id_sede]);
+    return result.rows[0];
+  } catch (err) {
+    throw err;
+  }
+};
