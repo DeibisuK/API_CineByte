@@ -30,9 +30,10 @@ export const remove = async (id) => {
 
     return result.rowCount > 0 ? result.rows[0] : null;
 }
+
 export const tienePeliculasAsociadas = async (id_genero) => {
     const result = await db.query(
-        'SELECT COUNT(*) FROM etiquetas_pelicula WHERE id_genero = $1',
+        'SELECT COUNT(*) FROM etiquetas_pelicula WHERE id_etiqueta = $1',
         [id_genero]
     );
     return parseInt(result.rows[0].count) > 0;
