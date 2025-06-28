@@ -17,7 +17,7 @@ export const updateGenero = async (id, data) => {
 };
 
 export const deleteGenero = async (id) => {
-  const tieneAsociaciones = await GenerosModel.tienePeliculasAsociadas(id);
+  const tieneAsociaciones = await model.tienePeliculasAsociadas(id);
   if (tieneAsociaciones) return null; // Bloquea si hay asociaciones
   return await GenerosModel.eliminarGenero(id);
 };
