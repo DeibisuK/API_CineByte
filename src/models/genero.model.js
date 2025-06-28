@@ -1,7 +1,7 @@
 import db from '../config/db.js';
 
 export const findAll = async () => {
-    const result = await db.query('SELECT * FROM generos');
+    const result = await db.query('SELECT g.id_genero, g.nombre, COUNT(pg.id_pelicula) AS total_peliculas FROM generos g LEFT JOIN pelicula_generos pg ON g.id_genero = pg.id_genero GROUP BY g.id_genero ORDER BY g.id_genero');
     return result.rows;
 };
 
