@@ -1,7 +1,7 @@
 import db from '../config/db.js';
 
 export const findAll = async () => {
-    const result = await db.query('SELECT * FROM peliculas');
+    const result = await db.query('SELECT * FROM obtener_todas_las_peliculas_completas()');
     return result.rows;
 };
 
