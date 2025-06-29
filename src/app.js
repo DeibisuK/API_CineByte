@@ -9,7 +9,8 @@ import distribuidorRoutes from './routes/distribuidor.routes.js';
 import idiomasRoutes from './routes/idiomas.routes.js';
 import contactoRoutes from './routes/contacto.routes.js';
 import sedeRoute from './routes/sede.routes.js';
-import ciudadRoutes from './routes/ciudades.routes.js';
+import ciudadRoutes from './routes/ciudades.routes.js'; 
+import paisesRoutes from './routes/paises.routes.js'; 
 
 dotenv.config();
 
@@ -27,5 +28,6 @@ app.use('/api/idiomas', idiomasRoutes);
 app.use('/api/sedes', sedeRoute);
 app.use('/api/contacto', contactoRoutes);
 app.use('/api/ciudades', ciudadRoutes);
+app.use('/api/paises', paisesRoutes);
 
 export default app;

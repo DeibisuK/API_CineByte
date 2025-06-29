@@ -1,7 +1,7 @@
 import db from '../config/db.js';
 
 export const findAll = async () => {
-    const result = await db.query('SELECT * FROM generos');
+    const result = await db.query('SELECT g.id_genero, g.nombre, COUNT(pg.id_pelicula) AS total_peliculas FROM generos g LEFT JOIN pelicula_generos pg ON g.id_genero = pg.id_genero GROUP BY g.id_genero ORDER BY g.id_genero');
     return result.rows;
 };
 
@@ -18,9 +18,10 @@ export const insert = async ({ nombre }) => {
 
 export const update = async (id, { nombre }) => {
     const result = await db.query(
-        'UPDATE generos SET nombre = $1 WHERE id_genero = $2',
+        'UPDATE generos SET nombre = $1 WHERE id_genero = $2 RETURNING *',
         [nombre, id]
     );
+    return result.rows[0];
 }
 
 export const remove = async (id) => {
@@ -36,9 +37,4 @@ export const tienePeliculasAsociadas = async (id_genero) => {
         [id_genero]
     );
     return parseInt(result.rows[0].count) > 0;
-}
-export const totalFilmsByGen = async (id) => {
-    const query = 'SELECT total_peliculas_por_genero($1) AS total';
-    const result = await db.query(query, [id]);
-    return result.rows[0].total;
 }

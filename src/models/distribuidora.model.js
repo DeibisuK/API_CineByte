@@ -10,19 +10,21 @@ export const findById = async (id) => {
     return result.rows[0];
 };
 
-export const insert = async({nombre, pais_origen, ano_fundacion, sitio_web, fecha_registro}) => {
-    const result = await db.query('INSERT INTO distribuidora (nombre, pais_origen, ano_fundacion, sitio_web, fecha_registro) VALUES ($1,$2,$3,$4,$5) RETURNING *'
-        , [nombre, pais_origen, ano_fundacion, sitio_web, fecha_registro]);
+export const insert = async ({ nombre, ano_fundacion, sitio_web, fecha_registro, id_pais_origen }) => {
+    const result = await db.query('INSERT INTO distribuidora (nombre, ano_fundacion, sitio_web, fecha_registro,id_pais_origen) VALUES ($1,$2,$3,$4,$5) RETURNING *'
+        , [nombre, ano_fundacion, sitio_web, fecha_registro, id_pais_origen]);
     return result.rows[0];
 };
 
-export const update = async(id,{nombre, pais_origen, ano_fundacion, sitio_web, fecha_registro}) => {
+export const update = async (id, { nombre, ano_fundacion, sitio_web, fecha_registro, id_pais_origen }) => {
     const result = await db.query(
-        'UPDATE distribuidora SET nombre = $1,pais_origen=$2, ano_fundacion=$3, sitio_web=$4, fecha_registro=$5 WHERE id_distribuidora = $6',
-        [nombre, pais_origen, ano_fundacion, sitio_web, fecha_registro,id]
+        'UPDATE distribuidora SET nombre = $1, ano_fundacion=$2, sitio_web=$3, fecha_registro=$4,id_pais_origen=$5 WHERE id_distribuidora = $6 RETURNING *',
+        [nombre, ano_fundacion, sitio_web, fecha_registro, id_pais_origen, id]
     );
+    return result.rows[0];
 }
 
-export const remove = async(id) => {
-    await db.query('DELETE FROM distribuidora WHERE id_distribuidora = $1', [id]);
+export const remove = async (id) => {
+    const result = await db.query('DELETE FROM distribuidora WHERE id_distribuidora = $1', [id]);
+    return result.rowCount > 0 ? result.rows[0] : null;
 }

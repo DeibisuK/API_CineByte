@@ -13,16 +13,14 @@ export const createGenero = async (data) => {
 };
 
 export const updateGenero = async (id, data) => {
+  const existente = await model.findById(id);
+  if (!existente) return null;
   return await model.update(id, data);
 };
 
 export const deleteGenero = async (id) => {
-  const tieneAsociaciones = await GenerosModel.tienePeliculasAsociadas(id);
+  const tieneAsociaciones = await model.tienePeliculasAsociadas(id);
   if (tieneAsociaciones) return null; // Bloquea si hay asociaciones
-  return await GenerosModel.eliminarGenero(id);
-};
-
-export const getFilmsByGen = async (id) => {
-  return await model.totalFilmsByGen(id);
+  return await model.remove(id);
 };
 
