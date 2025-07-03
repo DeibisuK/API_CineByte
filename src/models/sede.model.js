@@ -44,8 +44,7 @@ export const editarSede = async (id_sede, datos) => {
       longitud = $5,
       telefono = $6,
       email = $7,      
-      ciudad = $8,
-    WHERE id_sede = $9
+      ciudad = $8    WHERE id_sede = $9
     RETURNING *;
   `;
   const values = [nombre, direccion, estado, latitud, longitud, telefono, email,ciudad, id_sede];
