@@ -2,13 +2,12 @@ import db from '../config/db.js';
 
 export const crearSede = async ({
   nombre,
-  id_ciudad,
   direccion,
   estado = 'Activo',
   latitud,
   longitud,
   telefono,
-  email
+  email,ciudad
 }) => {
   const query = `
     INSERT INTO sedes (
