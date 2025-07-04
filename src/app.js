@@ -13,6 +13,7 @@ import ciudadRoutes from './routes/ciudades.routes.js';
 import paisesRoutes from './routes/paises.routes.js';
 import promocionesRoutes from './routes/promocion.routes.js';
 import userRoutes from './routes/users.routes.js';
+import salaRoutes from './routes/sala.routes.js';
 
 dotenv.config();
 
@@ -33,5 +34,6 @@ app.use('/api/ciudades', ciudadRoutes);
 app.use('/api/paises', paisesRoutes);
 app.use('/api/promociones', promocionesRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/salas', salaRoutes);
 
 export default app;
