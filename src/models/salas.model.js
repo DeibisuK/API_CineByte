@@ -36,7 +36,7 @@ export const editarSala = async (id_sala, datos) => {
       tipo_sala = $2,
       cantidad_asientos = $3,
       espacios = $4
-    WHERE id_sala = $6
+    WHERE id_sala = $5
     RETURNING *;
   `;
   const values = [nombre, tipo_sala, cantidad_asientos, JSON.stringify(espacios), id_sala];
