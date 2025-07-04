@@ -3,7 +3,8 @@ import {
   getAllSalas,
   editarSala as editarSalaService,
   eliminarSala as eliminarSalaService,
-  getSalaById as getSalaByIdService
+  getSalaById as getSalaByIdService,
+  getAsientos
 } from '../services/sala.service.js';
 
 export const crearSala = async (req, res) => {
@@ -72,5 +73,15 @@ export const eliminarSala = async (req, res) => {
   } catch (err) {
     console.error('Error al eliminar sala:', err);
     res.status(500).json({ error: 'Error al eliminar la sala' });
+  }
+};
+export const getAsientosPorSala = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const asientos = await getAsientos(id);
+    res.json(asientos);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al obtener los asientos de la sala' });
   }
 };

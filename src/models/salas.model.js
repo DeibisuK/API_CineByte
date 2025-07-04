@@ -50,3 +50,9 @@ export const eliminarSala = async (id_sala) => {
   const result = await db.query(query, [id_sala]);
   return result.rows[0];
 };
+
+export const obtenerAsientosPorSala = async (id_sala) => {
+  const query = 'SELECT * FROM asientos WHERE id_sala = $1 ORDER BY fila, columna;';
+  const result = await db.query(query, [id_sala]);
+  return result.rows;
+};
