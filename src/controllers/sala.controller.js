@@ -1,13 +1,6 @@
-import {
-  crearSala as crearSalaService,
-  getAllSalas,
-  editarSala as editarSalaService,
-  eliminarSala as eliminarSalaService,
-  getSalaById as getSalaByIdService,
-  getAsientos
-} from '../services/sala.service.js';
+import * as service from '../services/sala.service.js';
 
-export const crearSala = async (req, res) => {
+export const create = async (req, res) => {
   try {
     const sala = req.body;
 
@@ -16,7 +9,7 @@ export const crearSala = async (req, res) => {
       return res.status(400).json({ mensaje: 'La cantidad de asientos debe ser par' });
     }
 
-    const salaCreada = await crearSalaService(sala);
+    const salaCreada = await service.createSala(sala);
     res.status(201).json(salaCreada);
   } catch (err) {
     console.error('Error al crear sala:', err);
@@ -24,19 +17,19 @@ export const crearSala = async (req, res) => {
   }
 };
 
-export const listarSalas = async (req, res) => {
+export const getAll = async (req, res) => {
   try {
-    const salas = await getAllSalas();
+    const salas = await service.getAllSalas();
     res.json(salas);
   } catch (err) {
     res.status(500).json({ error: 'Error al obtener salas' });
   }
 };
 
-export const obtenerSalaPorId = async (req, res) => {
+export const getById = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const sala = await getSalaByIdService(id);
+    const sala = await service.getSalaById(id);
     if (sala) {
       res.json(sala);
     } else {
@@ -47,10 +40,10 @@ export const obtenerSalaPorId = async (req, res) => {
   }
 };
 
-export const editarSala = async (req, res) => {
+export const update = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const salaEditada = await editarSalaService(id, req.body);
+    const salaEditada = await service.updateSala(id, req.body);
     if (salaEditada) {
       res.json(salaEditada);
     } else {
@@ -61,10 +54,10 @@ export const editarSala = async (req, res) => {
   }
 };
 
-export const eliminarSala = async (req, res) => {
+export const remove = async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const salaEliminada = await eliminarSalaService(id);
+    const salaEliminada = await service.deleteSala(id);
     if (salaEliminada) {
       res.json({ mensaje: 'Sala eliminada', sala: salaEliminada });
     } else {

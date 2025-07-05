@@ -1,21 +1,21 @@
 import express from 'express';
 import {
-  crearSala,
-  listarSalas,
-  obtenerSalaPorId,
-  editarSala,
-  eliminarSala,
   getAsientosPorSala,
-  getByEstado
+  getByEstado,
+  create,
+  getAll,
+  getById,
+  update,
+  remove
 } from '../controllers/sala.controller.js';
 
 const router = express.Router();
 
-router.post('/', crearSala);
-router.get('/', listarSalas);
-router.get('/:id', obtenerSalaPorId);
-router.put('/:id', editarSala);
-router.delete('/:id', eliminarSala);
+router.post('/', create);
+router.get('/', getAll);
+router.get('/:id', getById);
+router.put('/:id', update);
+router.delete('/:id', remove);
 router.get('/asientos/:id', getAsientosPorSala);
 router.get('/estado/:estado', getByEstado);
 
