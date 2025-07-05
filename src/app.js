@@ -14,7 +14,7 @@ import paisesRoutes from './routes/paises.routes.js';
 import promocionesRoutes from './routes/promocion.routes.js';
 import anuncioRoutes from './routes/anuncio.routes.js';
 import sedeSalasRoutes from './routes/sede_salas.routes.js';
-import salasRoutes from './routes/salas.routes.js';
+import salasRoutes from './routes/sala.routes.js';
 
 dotenv.config();
 
