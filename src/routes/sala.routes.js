@@ -5,7 +5,8 @@ import {
   obtenerSalaPorId,
   editarSala,
   eliminarSala,
-  getAsientosPorSala
+  getAsientosPorSala,
+  getByEstado
 } from '../controllers/sala.controller.js';
 
 const router = express.Router();
@@ -16,6 +17,7 @@ router.get('/:id', obtenerSalaPorId);
 router.put('/:id', editarSala);
 router.delete('/:id', eliminarSala);
 router.get('/asientos/:id', getAsientosPorSala);
+router.get('/estado/:estado', getByEstado);
 
 
 export default router;

@@ -4,7 +4,8 @@ import {
   editarSala as editarSalaService,
   eliminarSala as eliminarSalaService,
   getSalaById as getSalaByIdModel,
-  obtenerAsientosPorSala
+  obtenerAsientosPorSala,
+  findByEstado as getSalasByEstado
 } from '../models/salas.model.js';
 
 export const crearSala = async (datosSala) => {
@@ -28,4 +29,8 @@ export const eliminarSala = async (id_sala) => {
 };
 export const getAsientos = async (id_sala) => {
   return await obtenerAsientosPorSala(id_sala);
+};
+
+export const getSalasByEstado = async (estado) => {
+    return await model.findByEstado(estado);
 };

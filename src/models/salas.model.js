@@ -37,3 +37,9 @@ export const findByEstado = async (estado) => {
     const result = await db.query('SELECT * FROM salas WHERE estado = $1 ORDER BY nombre', [estado]);
     return result.rows;
 };
+
+export const obtenerAsientosPorSala = async (id_sala) => {
+    const query = 'SELECT * FROM asientos WHERE id_sala = $1 ORDER BY fila, columna;';
+    const result = await db.query(query, [id_sala]);
+    return result.rows;
+};

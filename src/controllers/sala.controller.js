@@ -85,3 +85,12 @@ export const getAsientosPorSala = async (req, res) => {
     res.status(500).json({ error: 'Error al obtener los asientos de la sala' });
   }
 };
+
+export const getByEstado = async (req, res) => {
+    try {
+        const data = await service.getSalasByEstado(req.params.estado);
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
