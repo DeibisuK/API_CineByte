@@ -1,5 +1,5 @@
 import {insert,update,remove,findAll,findById,findByEstado,obtenerAsientosPorSala
-} from '../models/salas.model.js';
+} from '../models/sala.model.js';
 
 export const createSala = async (datosSala) => {
   return await insert(datosSala);
