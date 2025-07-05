@@ -71,7 +71,7 @@ export const remove = async (req, res) => {
 export const getAsientosPorSala = async (req, res) => {
   const { id } = req.params;
   try {
-    const asientos = await getAsientos(id);
+    const asientos = await service.getAsientos(id);
     res.json(asientos);
   } catch (error) {
     console.error(error);
