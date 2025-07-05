@@ -8,6 +8,14 @@ export const getAll = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+export const getAllCompletas = async (req, res) => {
+  try {
+    const data = await service.getAllPeliculasCompletas();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
 
 export const getById = async (req, res) => {
   try {
@@ -19,7 +27,6 @@ export const getById = async (req, res) => {
   }
 };
 export const create = async (req, res) => {
-  console.log('BODY:', req.body); // Verifica si id_distribuidor está llegando
   try {
     const {
       titulo,
@@ -57,21 +64,42 @@ export const create = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-/*
-export const create = async (req, res) => {
-  try {
-    const data = await service.createPelicula(req.body);
+
+export const update = async (req, res) => {
+ try {
+    const {
+      titulo,
+      descripcion,
+      duracion_minutos,
+      fecha_estreno,
+      estado,
+      clasificacion,
+      imagen,
+      id_distribuidor,
+      idiomas,
+      generos,
+      actores,
+      etiquetas
+    } = req.body;
+
+    const data = await service.updatePelicula(req.params.id,{
+      titulo,
+      descripcion,
+      duracion_minutos,
+      fecha_estreno,
+      estado,
+      clasificacion,
+      imagen,
+      id_distribuidor,
+      idiomas,
+      generos,
+      actores,
+      etiquetas
+    });
+
     res.status(201).json(data);
   } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-*/
-export const update = async (req, res) => {
-  try {
-    const data = await service.updatePelicula(req.params.id, req.body);
-    res.json(data);
-  } catch (err) {
+    console.error('Error al crear película:', err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -80,6 +108,42 @@ export const remove = async (req, res) => {
   try {
     await service.deletePelicula(req.params.id);
     res.json({ message: 'Pelicula eliminada' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getAllActores = async (req, res) => {
+  try {
+    const data = await service.getAllActoresByPeliculaId(req.params.id);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getAllGeneros = async (req, res) => {
+  try {
+    const data = await service.getAllGenerosByPeliculaId(req.params.id);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getAllEtiquetas = async (req, res) => {
+  try {
+    const data = await service.getAllEtiquetasByPeliculaId(req.params.id);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getAllIdiomas = async (req, res) => {
+  try {
+    const data = await service.getAllIdiomasByPeliculaId(req.params.id);
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
