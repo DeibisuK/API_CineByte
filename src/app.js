@@ -15,6 +15,7 @@ import promocionesRoutes from './routes/promocion.routes.js';
 import anuncioRoutes from './routes/anuncio.routes.js';
 import sedeSalasRoutes from './routes/sede_salas.routes.js';
 import salasRoutes from './routes/sala.routes.js';
+import usersRoutes from './routes/users.routes.js';
 
 dotenv.config();
 
@@ -36,6 +37,7 @@ app.use('/api/paises', paisesRoutes);
 app.use('/api/promociones', promocionesRoutes);
 app.use('/api/anuncios', anuncioRoutes);
 app.use('/api/sede-salas', sedeSalasRoutes);
+app.use('/api/users', usersRoutes);
 app.use('/api/salas', salasRoutes);
 
 export default app;
