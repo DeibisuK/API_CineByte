@@ -57,6 +57,16 @@ export const create = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+/*
+export const create = async (req, res) => {
+  try {
+    const data = await service.createPelicula(req.body);
+    res.status(201).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+*/
 export const update = async (req, res) => {
   try {
     const data = await service.updatePelicula(req.params.id, req.body);
@@ -68,9 +78,9 @@ export const update = async (req, res) => {
 
 export const remove = async (req, res) => {
   try {
-    const mensaje = await service.deletePelicula(req.params.id);
-    res.json({ message: mensaje });
+    await service.deletePelicula(req.params.id);
+    res.json({ message: 'Pelicula eliminada' });
   } catch (err) {
-    res.status(500).json({ error: 'Error al eliminar la película', detalle: err.message });
+    res.status(500).json({ error: err.message });
   }
 };

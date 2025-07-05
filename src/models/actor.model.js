@@ -4,7 +4,7 @@ export const findAll = async () => {
     const result = await db.query('SELECT * FROM actores');
     return result.rows;
 };
-
+//Comentario X
 export const findById = async (id) => {
     const result = await db.query('SELECT * FROM actores WHERE id_actor = $1', [id]);
     return result.rows[0];

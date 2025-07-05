@@ -18,7 +18,7 @@ export const insert = async ({ nombre, ano_fundacion, sitio_web, id_pais_origen 
 
 export const update = async (id, { nombre, ano_fundacion, sitio_web, id_pais_origen }) => {
     const result = await db.query(
-        'UPDATE distribuidora SET nombre = $1, ano_fundacion=$2, sitio_web=$3, id_pais_origen=$4 WHERE id_distribuidora = $5 RETURNING *',
+        'UPDATE distribuidora SET nombre = $1, ano_fundacion=$2, sitio_web=$3, id_pais_origen=$4 WHERE id_distribuidora = $6 RETURNING *',
         [nombre, ano_fundacion, sitio_web, id_pais_origen, id]
     );
     return result.rows[0];
