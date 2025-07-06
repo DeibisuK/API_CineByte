@@ -24,6 +24,48 @@ export const detectarBanco = (numeroTarjeta) => {
     }
 };
 
+// Función para detectar el tipo de tarjeta (similar al frontend)
+export const detectarTipoTarjeta = (numeroTarjeta) => {
+    const numero = numeroTarjeta.replace(/\s/g, ''); // Remover espacios
+    const primerosCuatro = numero.substring(0, 4);
+    
+    if (numero.startsWith('4')) {
+        return 'Visa';
+    } else if (numero.startsWith('5') || (numero.startsWith('2') && parseInt(primerosCuatro) >= 2221 && parseInt(primerosCuatro) <= 2720)) {
+        return 'Mastercard';
+    } else if (numero.startsWith('34') || numero.startsWith('37')) {
+        return 'American Express';
+    } else if (numero.startsWith('6011') || numero.startsWith('644') || numero.startsWith('645') || numero.startsWith('646') || numero.startsWith('647') || numero.startsWith('648') || numero.startsWith('649') || numero.startsWith('65')) {
+        return 'Discover';
+    } else if (numero.startsWith('30') || numero.startsWith('36') || numero.startsWith('38')) {
+        return 'Diners Club';
+    } else if (numero.startsWith('35')) {
+        return 'JCB';
+    } else if (numero.startsWith('1')) {
+        return 'Tarjeta de Crédito';
+    } else if (numero.startsWith('9')) {
+        return 'Tarjeta Virtual';
+    } else if (numero.startsWith('8')) {
+        return 'Tarjeta Corporativa';
+    } else if (numero.startsWith('7')) {
+        return 'Tarjeta de Débito';
+    } else if (numero.startsWith('0')) {
+        return 'Tarjeta Prepago';
+    } else {
+        const primerDigito = numero.charAt(0);
+        switch (primerDigito) {
+            case '2':
+                return 'Tarjeta Bancaria';
+            case '3':
+                return 'Tarjeta de Servicios';
+            case '6':
+                return 'Tarjeta de Comercio';
+            default:
+                return 'Tarjeta de Pago';
+        }
+    }
+};
+
 // Obtener todos los métodos de pago de un usuario
 export const findByFirebaseUid = async (firebase_uid) => {
     const result = await db.query(
@@ -59,13 +101,14 @@ export const insert = async ({
     cvv
 }) => {
     const banco = detectarBanco(numero_tarjeta);
+    const tipo_tarjeta = detectarTipoTarjeta(numero_tarjeta);
     
     const result = await db.query(
         `INSERT INTO metodos_pago 
-        (firebase_uid, numero_tarjeta, fecha_expiracion, cvv, banco) 
-        VALUES ($1, $2, $3, $4, $5) 
+        (firebase_uid, numero_tarjeta, fecha_expiracion, cvv, banco, tipo_tarjeta) 
+        VALUES ($1, $2, $3, $4, $5, $6) 
         RETURNING *`,
-        [firebase_uid, numero_tarjeta, fecha_expiracion, cvv, banco]
+        [firebase_uid, numero_tarjeta, fecha_expiracion, cvv, banco, tipo_tarjeta]
     );
     return result.rows[0];
 };
