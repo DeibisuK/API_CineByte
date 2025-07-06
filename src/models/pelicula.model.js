@@ -89,7 +89,7 @@ export const update = async (id, {
     img_carrusel
 }) => {
     await db.query(
-        'CALL actualizar_pelicula_completa($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)',
+        'CALL actualizar_pelicula_completa($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13, $14)',
         [id,
             titulo,
             descripcion,
