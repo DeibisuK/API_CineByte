@@ -8,6 +8,7 @@ export const getAll = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 export const getAllCompletas = async (req, res) => {
   try {
     const data = await service.getAllPeliculasCompletas();
@@ -26,6 +27,7 @@ export const getById = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 export const create = async (req, res) => {
   try {
     const {
@@ -40,7 +42,8 @@ export const create = async (req, res) => {
       idiomas,
       generos,
       actores,
-      etiquetas
+      etiquetas,
+      img_carrusel
     } = req.body;
 
     const data = await service.createPelicula({
@@ -55,7 +58,8 @@ export const create = async (req, res) => {
       idiomas,
       generos,
       actores,
-      etiquetas
+      etiquetas,
+      img_carrusel
     });
 
     res.status(201).json(data);
@@ -79,7 +83,8 @@ export const update = async (req, res) => {
       idiomas,
       generos,
       actores,
-      etiquetas
+      etiquetas,
+      img_carrusel
     } = req.body;
 
     const data = await service.updatePelicula(req.params.id,{
@@ -94,7 +99,8 @@ export const update = async (req, res) => {
       idiomas,
       generos,
       actores,
-      etiquetas
+      etiquetas,
+      img_carrusel
     });
 
     res.status(201).json(data);

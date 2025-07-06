@@ -50,10 +50,11 @@ export const insert = async ({
     idiomas,
     generos,
     actores,
-    etiquetas
+    etiquetas,
+    img_carrusel
 }) => {
     await db.query(
-        'CALL insertar_pelicula_completa($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)',
+        'CALL insertar_pelicula_completa($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)',
         [
             titulo,
             descripcion,
@@ -66,7 +67,8 @@ export const insert = async ({
             idiomas,  // array de enteros
             generos,
             actores,
-            etiquetas
+            etiquetas,
+            JSON.stringify(img_carrusel)
         ]
     );
 };
@@ -83,7 +85,8 @@ export const update = async (id, {
     idiomas,
     generos,
     actores,
-    etiquetas
+    etiquetas,
+    img_carrusel
 }) => {
     await db.query(
         'CALL actualizar_pelicula_completa($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)',
@@ -99,7 +102,9 @@ export const update = async (id, {
             idiomas,  // array de enteros
             generos,
             actores,
-            etiquetas
+            etiquetas,
+            JSON.stringify(img_carrusel), // 👈 importante
+
         ]
     );
 };
