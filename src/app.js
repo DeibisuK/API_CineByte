@@ -15,8 +15,8 @@ import promocionesRoutes from './routes/promocion.routes.js';
 import anuncioRoutes from './routes/anuncio.routes.js';
 import sedeSalasRoutes from './routes/sede_salas.routes.js';
 import salasRoutes from './routes/sala.routes.js';
-import usersRoutes from './routes/users.routes.js';
-
+import usersRoutes from './routes/users.routes.js'; 
+import funcionesRoutes from './routes/funciones.routes.js';
 dotenv.config();
 
 const app = express();
@@ -39,5 +39,6 @@ app.use('/api/anuncios', anuncioRoutes);
 app.use('/api/sede-salas', sedeSalasRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/salas', salasRoutes);
+app.use('/api/funciones', funcionesRoutes);
 
 export default app;

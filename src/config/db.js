@@ -1,6 +1,8 @@
-import { Pool } from 'pg';
+import { Pool, types } from 'pg';
 import dotenv from 'dotenv';
 dotenv.config();
+
+types.setTypeParser(1700, (val) => parseFloat(val));
 
 const pool = new Pool({
   user: process.env.DB_USER,
@@ -10,5 +12,6 @@ const pool = new Pool({
   port: process.env.DB_PORT,
   ssl: { rejectUnauthorized: false } // Render requiere SSL
 });
+
 
 export default pool;
