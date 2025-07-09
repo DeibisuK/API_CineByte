@@ -38,6 +38,12 @@ export const findById = async (id) => {
     return result.rows[0];
 };
 
+export const findByIdComplete = async (id) => {
+    const query = 'SELECT * FROM obtener_pelicula_completa($1);';
+    const result = await db.query(query, [id]);
+    return result.rows[0].obtener_pelicula_completa_porid;
+};
+
 export const insert = async ({
     titulo,
     descripcion,

@@ -22,3 +22,7 @@ export const deleteFuncion = async (id) => {
     return await model.remove(id);
 };
 
+export const getFuncionesByPeliculaId = async (id) => {
+    return await model.findFuncionesByPeliculaId(id);
+};
+

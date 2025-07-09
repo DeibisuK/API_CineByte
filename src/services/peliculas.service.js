@@ -12,6 +12,10 @@ export const getPeliculaById = async (id) => {
   return await model.findById(id);
 };
 
+export const getPeliculaByIdComplete = async (id) => {
+  return await model.findByIdComplete(id);
+};
+
 export const createPelicula = async (data) => {
   return await model.insert(data);
 };

@@ -37,3 +37,9 @@ export const remove = async (id) => {
     );
     return result.rowCount > 0 ? result.rows[0] : null;
 }
+
+export const findFuncionesByPeliculaId = async (id) => {
+    const query = 'SELECT * FROM obtener_funciones_por_id_pelicula_formato_json($1);';
+    const result = await db.query(query, [id]);
+    return result.rows;
+};

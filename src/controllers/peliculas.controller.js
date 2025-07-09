@@ -28,6 +28,16 @@ export const getById = async (req, res) => {
   }
 };
 
+export const getByIdComplete = async (req, res) => {
+  try {
+    const data = await service.getPeliculaByIdComplete(req.params.id);
+    if (!data) return res.status(404).json({ error: 'Pelicula no encontrada' });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 export const create = async (req, res) => {
   try {
     const {

@@ -4,6 +4,7 @@ import * as controller from '../controllers/peliculas.controller.js';
 
 router.get('/', controller.getAll);
 router.get('/completas', controller.getAllCompletas); // Nueva ruta para obtener todas las películas completas
+router.get('/completas/:id', controller.getByIdComplete); // Nueva ruta para obtener una película completa por ID
 router.get('/actores/:id', controller.getAllActores);
 router.get('/generos/:id', controller.getAllGeneros);
 router.get('/etiquetas/:id', controller.getAllEtiquetas);

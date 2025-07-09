@@ -69,3 +69,13 @@ export const remove = async (req, res) => {
         res.status(500).json({ error: 'Error interno del servidor' });
     }
 };
+
+export const getByPeliculaId = async (req, res) => {
+    try {
+        const data = await service.getFuncionesByPeliculaId(req.params.id);
+        if (!data || data.length === 0) return res.status(404).json({ error: 'No se encontraron funciones para esta película' });
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
