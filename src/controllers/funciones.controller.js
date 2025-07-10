@@ -38,6 +38,7 @@ export const update = async (req, res) => {
 
     try {
         const actualizado = await service.updateFuncion(id, { id_pelicula, id_sala, fecha_hora_inicio, precio_funcion, id_idioma, trailer_url, estado, fecha_hora_fin });
+        
         if (!actualizado) {
             return res.status(404).json({ error: 'Función no encontrada' });
         }

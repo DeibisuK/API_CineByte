@@ -13,8 +13,6 @@ export const createFuncion = async (data) => {
 };
 
 export const updateFuncion = async (id, data) => {
-    const existente = await model.findById(id);
-    if (!existente) return null;
     return await model.update(id, data);
 };
 

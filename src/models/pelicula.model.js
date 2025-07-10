@@ -39,9 +39,14 @@ export const findById = async (id) => {
 };
 
 export const findByIdComplete = async (id) => {
-    const query = 'SELECT * FROM obtener_pelicula_completa($1);';
+    const query = 'SELECT * FROM obtener_pelicula_completa($1) as pelicula;';
     const result = await db.query(query, [id]);
-    return result.rows[0].obtener_pelicula_completa_porid;
+
+    let pelicula = result.rows[0].pelicula;
+    if (typeof pelicula === 'string') {
+        pelicula = JSON.parse(pelicula);
+    }
+    return pelicula;
 };
 
 export const insert = async ({
