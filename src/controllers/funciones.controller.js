@@ -73,9 +73,11 @@ export const remove = async (req, res) => {
 export const getByPeliculaId = async (req, res) => {
     try {
         const data = await service.getFuncionesByPeliculaId(req.params.id);
-        if (!data || data.length === 0) return res.status(404).json({ error: 'No se encontraron funciones para esta película' });
-        res.json(data);
+        // Si no hay funciones, retornar array vacío con status 200
+        // Es válido que una película no tenga funciones
+        res.json(data || []);
     } catch (err) {
+        console.error(`Error al obtener funciones para película ${req.params.id}:`, err);
         res.status(500).json({ error: err.message });
     }
 };
