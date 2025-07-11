@@ -9,19 +9,19 @@ export const getAllSalas = async () => {
   return await findAll();
 };
 
-export const getSalaById = async (id_sala) => {
-  return await findById(id_sala);
+export const getSalaById = async (id) => {
+  return await findById(id);
 };
 
-export const updateSala = async (id_sala, datos) => {
-  return await update(id_sala, datos);
+export const updateSala = async (id, datos) => {
+  return await update(id, datos);
 };
 
-export const deleteSala = async (id_sala) => {
-  return await remove(id_sala);
+export const deleteSala = async (id) => {
+  return await remove(id);
 };
-export const getAsientos = async (id_sala) => {
-  return await obtenerAsientosPorSala(id_sala);
+export const getAsientos = async (id) => {
+  return await obtenerAsientosPorSala(id);
 };
 
 export const getSalasByEstado = async (estado) => {

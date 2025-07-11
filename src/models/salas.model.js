@@ -10,21 +10,21 @@ export const findById = async (id) => {
     return result.rows[0];
 };
 
-export const insert = async ({ nombre, cantidad_asientos, tipo_sala, estado = 'Disponible' }) => {
+export const insert = async ({ nombre, cantidad_asientos, tipo_sala, espacios }) => {
     const result = await db.query(
-        `INSERT INTO salas (nombre, cantidad_asientos, tipo_sala, estado) 
+        `INSERT INTO salas (nombre, cantidad_asientos, tipo_sala, espacios) 
          VALUES ($1, $2, $3, $4) RETURNING *`,
-        [nombre, cantidad_asientos, tipo_sala, estado]
+        [nombre, cantidad_asientos, tipo_sala, JSON.stringify(espacios)]
     );
     return result.rows[0];
 };
 
-export const update = async (id, { nombre, cantidad_asientos, tipo_sala, estado }) => {
+export const update = async (id, { nombre, cantidad_asientos, tipo_sala, espacios }) => {
     const result = await db.query(
         `UPDATE salas SET 
-            nombre = $1, cantidad_asientos = $2, tipo_sala = $3, estado = $4
+            nombre = $1, cantidad_asientos = $2, tipo_sala = $3, espacios = $4
          WHERE id_sala = $5 RETURNING *`,
-        [nombre, cantidad_asientos, tipo_sala, estado, id]
+        [nombre, cantidad_asientos, tipo_sala, JSON.stringify(espacios), id]
     );
     return result.rows[0];
 };
@@ -38,8 +38,8 @@ export const findByEstado = async (estado) => {
     return result.rows;
 };
 
-export const obtenerAsientosPorSala = async (id_sala) => {
+export const obtenerAsientosPorSala = async (id) => {
     const query = 'SELECT * FROM asientos WHERE id_sala = $1 ORDER BY fila, columna;';
-    const result = await db.query(query, [id_sala]);
+    const result = await db.query(query, [id]);
     return result.rows;
 };

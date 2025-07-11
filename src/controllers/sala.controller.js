@@ -55,18 +55,15 @@ export const update = async (req, res) => {
 };
 
 export const remove = async (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    const salaEliminada = await service.deleteSala(id);
-    if (salaEliminada) {
-      res.json({ mensaje: 'Sala eliminada', sala: salaEliminada });
-    } else {
-      res.status(404).json({ mensaje: 'Sala no encontrada' });
+
+   try {
+      await service.deleteSala(req.params.id);
+      res.json({ message: 'Sala eliminada' });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
     }
-  } catch (err) {
-    console.error('Error al eliminar sala:', err);
-    res.status(500).json({ error: 'Error al eliminar la sala' });
-  }
+
+  
 };
 export const getAsientosPorSala = async (req, res) => {
   const { id } = req.params;
