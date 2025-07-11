@@ -803,3 +803,281 @@ export const getAvailableReports = async () => {
         formats: ['pdf', 'excel']
     };
 };
+
+// Función específica para generar PDF de factura de venta
+export const generarFacturaPDF = async (ventaId, firebase_uid) => {
+    try {
+        console.log('🧾 Generando factura PDF para venta:', ventaId);
+        
+        // Obtener datos completos de la venta con JOIN
+        const query = `
+            SELECT 
+                v.id_venta,
+                v.firebase_uid,
+                v.id_funcion,
+                v.fecha_venta,
+                v.cantidad_boletos,
+                v.subtotal,
+                v.iva,
+                v.total,
+                v.estado as venta_estado,
+                
+                f.id_factura,
+                f.numero_factura,
+                f.fecha_emision,
+                f.cliente_nombre,
+                f.cliente_email,
+                f.cliente_telefono,
+                f.pelicula_titulo,
+                f.sala_nombre,
+                f.fecha_funcion,
+                f.hora_inicio,
+                f.hora_fin,
+                f.idioma,
+                f.subtotal as factura_subtotal,
+                f.iva_valor,
+                f.total as factura_total,
+                
+                p.id_pago,
+                p.id_metodo_pago,
+                p.monto,
+                p.fecha_pago,
+                
+                va.numero_asiento,
+                va.precio_unitario,
+                
+                fd.descripcion as detalle_descripcion,
+                fd.cantidad as detalle_cantidad,
+                fd.precio_unitario as detalle_precio_unitario,
+                fd.subtotal as detalle_subtotal
+                
+            FROM ventas v
+            LEFT JOIN facturas f ON v.id_venta = f.id_venta
+            LEFT JOIN pagos p ON v.id_venta = p.id_venta
+            LEFT JOIN venta_asientos va ON v.id_venta = va.id_venta
+            LEFT JOIN factura_detalles fd ON f.id_factura = fd.id_factura
+            WHERE v.id_venta = $1 AND v.firebase_uid = $2
+            ORDER BY va.id_venta_asiento, fd.id_detalle
+        `;
+        
+        const result = await db.query(query, [ventaId, firebase_uid]);
+        
+        if (result.rows.length === 0) {
+            throw new Error('Venta no encontrada o no pertenece al usuario');
+        }
+        
+        // Agrupar datos
+        const ventaData = result.rows[0];
+        const asientos = result.rows
+            .filter(row => row.numero_asiento)
+            .map(row => ({
+                numero_asiento: row.numero_asiento,
+                precio_unitario: row.precio_unitario
+            }));
+        
+        const detalles = result.rows
+            .filter(row => row.detalle_descripcion)
+            .map(row => ({
+                descripcion: row.detalle_descripcion,
+                cantidad: row.detalle_cantidad,
+                precio_unitario: row.detalle_precio_unitario,
+                subtotal: row.detalle_subtotal
+            }));
+        
+        console.log('📊 Datos de factura obtenidos:', {
+            venta: ventaData.id_venta,
+            factura: ventaData.numero_factura,
+            asientos: asientos.length,
+            detalles: detalles.length
+        });
+        
+        // Generar PDF
+        const pdfBuffer = await generarFacturaPDFBuffer({
+            venta: ventaData,
+            asientos,
+            detalles
+        });
+        
+        const filename = `Factura_${ventaData.numero_factura || ventaData.id_venta}_${new Date().toISOString().split('T')[0]}.pdf`;
+        
+        return {
+            data: pdfBuffer,
+            filename
+        };
+        
+    } catch (error) {
+        console.error('Error generando factura PDF:', error);
+        throw new Error(`Error al generar factura PDF: ${error.message}`);
+    }
+};
+
+// Función para generar el buffer del PDF de factura
+const generarFacturaPDFBuffer = async (data) => {
+    return new Promise((resolve, reject) => {
+        try {
+            const doc = new PDFDocument({ margin: 50 });
+            const chunks = [];
+            
+            doc.on('data', chunks.push.bind(chunks));
+            doc.on('end', () => {
+                const pdfBuffer = Buffer.concat(chunks);
+                resolve(pdfBuffer);
+            });
+            
+            // Configurar colores
+            const primaryColor = '#2c3e50';
+            const accentColor = '#e74c3c';
+            const lightGray = '#ecf0f1';
+            
+            // Header con logo y título
+            doc.fillColor(primaryColor)
+               .fontSize(24)
+               .font('Helvetica-Bold')
+               .text('CINEBYTE', 50, 50);
+            
+            doc.fillColor(accentColor)
+               .fontSize(14)
+               .font('Helvetica')
+               .text('FACTURA ELECTRÓNICA', 50, 80);
+            
+            // Información de la empresa (lado derecho)
+            doc.fillColor(primaryColor)
+               .fontSize(10)
+               .font('Helvetica')
+               .text('CineByte S.A.S', 400, 50)
+               .text('NIT: 900.123.456-7', 400, 65)
+               .text('Régimen Responsable de IVA', 400, 80)
+               .text('contacto@cinebyte.com', 400, 95)
+               .text('Tel: (57) 300 123 4567', 400, 110);
+            
+            // Línea separadora
+            doc.strokeColor(lightGray)
+               .lineWidth(1)
+               .moveTo(50, 130)
+               .lineTo(550, 130)
+               .stroke();
+            
+            // Información de la factura
+            const facturaY = 150;
+            doc.fillColor(primaryColor)
+               .fontSize(12)
+               .font('Helvetica-Bold')
+               .text('INFORMACIÓN DE FACTURA', 50, facturaY);
+            
+            doc.font('Helvetica')
+               .fontSize(10)
+               .text(`Número de Factura: ${data.venta.numero_factura || 'N/A'}`, 50, facturaY + 20)
+               .text(`Fecha de Emisión: ${new Date(data.venta.fecha_emision || data.venta.fecha_venta).toLocaleDateString('es-ES')}`, 50, facturaY + 35)
+               .text(`ID de Venta: ${data.venta.id_venta}`, 50, facturaY + 50);
+            
+            // Información del cliente
+            doc.font('Helvetica-Bold')
+               .text('INFORMACIÓN DEL CLIENTE', 300, facturaY);
+            
+            doc.font('Helvetica')
+               .text(`Nombre: ${data.venta.cliente_nombre || 'Cliente Genérico'}`, 300, facturaY + 20)
+               .text(`Email: ${data.venta.cliente_email || 'N/A'}`, 300, facturaY + 35)
+               .text(`Teléfono: ${data.venta.cliente_telefono || 'N/A'}`, 300, facturaY + 50);
+            
+            // Información de la función
+            const funcionY = facturaY + 80;
+            doc.fillColor(accentColor)
+               .font('Helvetica-Bold')
+               .fontSize(12)
+               .text('DETALLES DE LA FUNCIÓN', 50, funcionY);
+            
+            doc.fillColor(primaryColor)
+               .font('Helvetica')
+               .fontSize(10)
+               .text(`Película: ${data.venta.pelicula_titulo || 'N/A'}`, 50, funcionY + 20)
+               .text(`Sala: ${data.venta.sala_nombre || 'N/A'}`, 50, funcionY + 35)
+               .text(`Fecha: ${data.venta.fecha_funcion ? new Date(data.venta.fecha_funcion).toLocaleDateString('es-ES') : 'N/A'}`, 50, funcionY + 50)
+               .text(`Horario: ${data.venta.hora_inicio || 'N/A'} - ${data.venta.hora_fin || 'N/A'}`, 300, funcionY + 20)
+               .text(`Idioma: ${data.venta.idioma || 'N/A'}`, 300, funcionY + 35)
+               .text(`Asientos: ${data.asientos.map(a => a.numero_asiento).join(', ')}`, 300, funcionY + 50);
+            
+            // Tabla de detalles
+            const tablaY = funcionY + 80;
+            doc.fillColor(lightGray)
+               .rect(50, tablaY, 500, 25)
+               .fill();
+            
+            doc.fillColor(primaryColor)
+               .font('Helvetica-Bold')
+               .fontSize(10)
+               .text('DESCRIPCIÓN', 60, tablaY + 8)
+               .text('CANT.', 300, tablaY + 8)
+               .text('PRECIO UNIT.', 350, tablaY + 8)
+               .text('SUBTOTAL', 450, tablaY + 8);
+            
+            let currentY = tablaY + 30;
+            
+            // Agregar detalles de la factura
+            if (data.detalles && data.detalles.length > 0) {
+                data.detalles.forEach((detalle, index) => {
+                    doc.fillColor(primaryColor)
+                       .font('Helvetica')
+                       .fontSize(9)
+                       .text(detalle.descripcion, 60, currentY)
+                       .text(detalle.cantidad.toString(), 300, currentY)
+                       .text(`$${detalle.precio_unitario.toLocaleString()}`, 350, currentY)
+                       .text(`$${detalle.subtotal.toLocaleString()}`, 450, currentY);
+                    currentY += 20;
+                });
+            } else {
+                // Si no hay detalles, mostrar asientos
+                data.asientos.forEach((asiento, index) => {
+                    doc.fillColor(primaryColor)
+                       .font('Helvetica')
+                       .fontSize(9)
+                       .text(`Asiento ${asiento.numero_asiento}`, 60, currentY)
+                       .text('1', 300, currentY)
+                       .text(`$${asiento.precio_unitario.toLocaleString()}`, 350, currentY)
+                       .text(`$${asiento.precio_unitario.toLocaleString()}`, 450, currentY);
+                    currentY += 20;
+                });
+            }
+            
+            // Totales
+            const totalesY = currentY + 20;
+            doc.strokeColor(lightGray)
+               .lineWidth(1)
+               .moveTo(350, totalesY)
+               .lineTo(550, totalesY)
+               .stroke();
+            
+            doc.fillColor(primaryColor)
+               .font('Helvetica')
+               .fontSize(10)
+               .text(`Subtotal:`, 400, totalesY + 10)
+               .text(`$${(data.venta.subtotal || data.venta.factura_subtotal || 0).toLocaleString()}`, 480, totalesY + 10)
+               .text(`IVA (19%):`, 400, totalesY + 25)
+               .text(`$${(data.venta.iva || data.venta.iva_valor || 0).toLocaleString()}`, 480, totalesY + 25);
+            
+            doc.font('Helvetica-Bold')
+               .fontSize(12)
+               .text(`TOTAL:`, 400, totalesY + 45)
+               .text(`$${(data.venta.total || data.venta.factura_total || 0).toLocaleString()}`, 480, totalesY + 45);
+            
+            // Footer
+            const footerY = totalesY + 80;
+            doc.strokeColor(lightGray)
+               .lineWidth(1)
+               .moveTo(50, footerY)
+               .lineTo(550, footerY)
+               .stroke();
+            
+            doc.fillColor(primaryColor)
+               .font('Helvetica')
+               .fontSize(8)
+               .text('Esta factura fue generada electrónicamente y tiene validez legal.', 50, footerY + 10)
+               .text('Para consultas: contacto@cinebyte.com | www.cinebyte.com', 50, footerY + 25)
+               .text(`Generado el: ${new Date().toLocaleString('es-ES')}`, 50, footerY + 40);
+            
+            doc.end();
+            
+        } catch (error) {
+            reject(error);
+        }
+    });
+};

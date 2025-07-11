@@ -19,6 +19,7 @@ import usersRoutes from './routes/users.routes.js';
 import metodoPagoRoutes from './routes/metodo_pago.routes.js';
 import funcionesRoutes from './routes/funciones.routes.js';
 import exportRoutes from './routes/export.routes.js';
+import ventaRoutes from './routes/venta.routes.js';
 
 
 dotenv.config();
@@ -46,6 +47,7 @@ app.use('/api/salas', salasRoutes);
 app.use('/api/metodos-pago', metodoPagoRoutes);
 app.use('/api/funciones', funcionesRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/ventas', ventaRoutes);
 
 
 export default app;

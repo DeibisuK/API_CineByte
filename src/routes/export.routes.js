@@ -9,4 +9,7 @@ router.post('/', controller.exportData);
 // Ruta para obtener reportes disponibles
 router.get('/', controller.getAvailableReports);
 
+// Ruta para generar factura PDF específica
+router.get('/factura/:ventaId/:firebase_uid', controller.generarFacturaPDF);
+
 export default router;

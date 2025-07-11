@@ -42,3 +42,37 @@ export const getAvailableReports = async (req, res) => {
         });
     }
 };
+
+export const generarFacturaPDF = async (req, res) => {
+    try {
+        const { ventaId } = req.params;
+        const { firebase_uid } = req.query;
+
+        if (!ventaId) {
+            return res.status(400).json({
+                error: 'ID de venta requerido'
+            });
+        }
+
+        if (!firebase_uid) {
+            return res.status(400).json({
+                error: 'UID de usuario requerido'
+            });
+        }
+
+        console.log('Generando factura PDF para venta:', ventaId, 'usuario:', firebase_uid);
+
+        const result = await service.generarFacturaPDF(ventaId, firebase_uid);
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+        res.send(result.data);
+        
+    } catch (error) {
+        console.error('Error en generarFacturaPDF:', error);
+        res.status(500).json({ 
+            error: 'Error al generar la factura PDF',
+            details: error.message 
+        });
+    }
+};
