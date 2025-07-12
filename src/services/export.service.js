@@ -2,6 +2,10 @@ import db from '../config/db.js';
 import admin from '../config/firebase.js';
 import PDFDocument from 'pdfkit';
 import ExcelJS from 'exceljs';
+import { enviarCorreoConfirmacionCompra } from './contacto.service.js';
+import fs from 'fs';
+import path from 'path';
+import svg2img from 'svg2img';
 
 export const generateExport = async (category, reportType, format) => {
     try {
@@ -123,13 +127,19 @@ const getPeliculasQuery = (reportType) => {
         case 'peliculas mas vendidas':
             return `
                 SELECT p.titulo, p.descripcion, p.fecha_estreno, p.duracion_minutos, 
-                       d.nombre as distribuidor, COUNT(f.id_funcion) as total_funciones
+                       d.nombre as distribuidor, 
+                       COUNT(DISTINCT v.id_venta) as total_ventas,
+                       SUM(v.cantidad_boletos) as total_boletos_vendidos,
+                       SUM(v.total) as ingresos_totales
                 FROM peliculas p
                 LEFT JOIN distribuidora d ON p.id_distribuidor = d.id_distribuidora
-                LEFT JOIN funciones f ON p.id_pelicula = f.id_pelicula
+                JOIN funciones f ON p.id_pelicula = f.id_pelicula
+                JOIN ventas v ON f.id_funcion = v.id_funcion
+                WHERE v.estado = 'completada'
                 GROUP BY p.id_pelicula, p.titulo, p.descripcion, p.fecha_estreno, 
                          p.duracion_minutos, d.nombre
-                ORDER BY total_funciones DESC
+                HAVING COUNT(DISTINCT v.id_venta) > 0
+                ORDER BY total_boletos_vendidos DESC, ingresos_totales DESC
                 LIMIT 20
             `;
         case 'por género':
@@ -196,14 +206,19 @@ const getGenerosQuery = (reportType) => {
         case 'géneros más populares en ventas':
             return `
                 SELECT g.nombre,
-                       COUNT(f.id_funcion) as total_funciones,
-                       COUNT(DISTINCT p.id_pelicula) as total_peliculas
+                       COUNT(DISTINCT v.id_venta) as total_ventas,
+                       SUM(v.cantidad_boletos) as boletos_vendidos,
+                       SUM(v.total) as ingresos_totales,
+                       COUNT(DISTINCT p.id_pelicula) as peliculas_con_ventas
                 FROM generos g
                 JOIN pelicula_generos pg ON g.id_genero = pg.id_genero
                 JOIN peliculas p ON pg.id_pelicula = p.id_pelicula
-                LEFT JOIN funciones f ON p.id_pelicula = f.id_pelicula
+                JOIN funciones f ON p.id_pelicula = f.id_pelicula
+                JOIN ventas v ON f.id_funcion = v.id_funcion
+                WHERE v.estado = 'completada'
                 GROUP BY g.id_genero, g.nombre
-                ORDER BY total_funciones DESC, total_peliculas DESC
+                HAVING COUNT(DISTINCT v.id_venta) > 0
+                ORDER BY boletos_vendidos DESC, ingresos_totales DESC
             `;
         case 'generos con más películas publicadas':
         case 'géneros con más películas publicadas':
@@ -215,6 +230,7 @@ const getGenerosQuery = (reportType) => {
                 JOIN pelicula_generos pg ON g.id_genero = pg.id_genero
                 JOIN peliculas p ON pg.id_pelicula = p.id_pelicula
                 GROUP BY g.id_genero, g.nombre
+                HAVING COUNT(p.id_pelicula) > 0
                 ORDER BY total_peliculas DESC
             `;
         default: // Listado completo
@@ -240,25 +256,36 @@ const getDistribuidoresQuery = (reportType) => {
                 FROM distribuidora d
                 LEFT JOIN peliculas p ON d.id_distribuidora = p.id_distribuidor
                 GROUP BY d.id_distribuidora, d.nombre, d.ano_fundacion, d.sitio_web
+                HAVING COUNT(p.id_pelicula) > 0
                 ORDER BY total_peliculas DESC
             `;
         case 'distribuidores con más películas exitosas':
             return `
                 SELECT d.nombre, d.ano_fundacion, d.sitio_web,
-                       COUNT(p.id_pelicula) as peliculas_exitosas
+                       COUNT(DISTINCT p.id_pelicula) as peliculas_con_ventas,
+                       COUNT(DISTINCT v.id_venta) as total_ventas,
+                       SUM(v.cantidad_boletos) as boletos_vendidos,
+                       SUM(v.total) as ingresos_totales
                 FROM distribuidora d
                 JOIN peliculas p ON d.id_distribuidora = p.id_distribuidor
+                JOIN funciones f ON p.id_pelicula = f.id_pelicula
+                JOIN ventas v ON f.id_funcion = v.id_funcion
+                WHERE v.estado = 'completada'
                 GROUP BY d.id_distribuidora, d.nombre, d.ano_fundacion, d.sitio_web
-                ORDER BY peliculas_exitosas DESC
+                HAVING COUNT(DISTINCT v.id_venta) > 0
+                ORDER BY boletos_vendidos DESC, ingresos_totales DESC
             `;
         case 'distribuidores con más películas fracasadas':
             return `
                 SELECT d.nombre, d.ano_fundacion, d.sitio_web,
-                       COUNT(p.id_pelicula) as total_peliculas
+                       COUNT(DISTINCT p.id_pelicula) as peliculas_sin_ventas
                 FROM distribuidora d
                 JOIN peliculas p ON d.id_distribuidora = p.id_distribuidor
+                LEFT JOIN funciones f ON p.id_pelicula = f.id_pelicula
+                LEFT JOIN ventas v ON f.id_funcion = v.id_funcion AND v.estado = 'completada'
                 GROUP BY d.id_distribuidora, d.nombre, d.ano_fundacion, d.sitio_web
-                ORDER BY total_peliculas ASC
+                HAVING COUNT(DISTINCT v.id_venta) = 0 AND COUNT(DISTINCT p.id_pelicula) > 0
+                ORDER BY peliculas_sin_ventas DESC
             `;
         default: // Listado completo
             return `
@@ -282,11 +309,18 @@ const getFuncionesQuery = (reportType) => {
                        TO_CHAR(f.fecha_hora_fin, 'HH24:MI') as hora_fin, 
                        f.estado as tipo,
                        p.titulo as pelicula,
-                       sa.cantidad_asientos as capacidad
+                       sa.cantidad_asientos as capacidad,
+                       COUNT(DISTINCT v.id_venta) as ventas_realizadas,
+                       SUM(v.cantidad_boletos) as boletos_vendidos,
+                       ROUND((SUM(v.cantidad_boletos)::decimal / sa.cantidad_asientos) * 100, 2) as porcentaje_ocupacion
                 FROM funciones f
                 JOIN peliculas p ON f.id_pelicula = p.id_pelicula
                 JOIN salas sa ON f.id_sala = sa.id_sala
-                ORDER BY f.fecha_hora_inicio DESC
+                LEFT JOIN ventas v ON f.id_funcion = v.id_funcion AND v.estado = 'completada'
+                GROUP BY f.id_funcion, f.fecha_hora_inicio, f.fecha_hora_fin, f.estado, 
+                         p.titulo, sa.cantidad_asientos
+                HAVING SUM(v.cantidad_boletos) > 0
+                ORDER BY boletos_vendidos DESC, porcentaje_ocupacion DESC
                 LIMIT 50
             `;
         case 'funciones por horario más populares':
@@ -299,8 +333,11 @@ const getFuncionesQuery = (reportType) => {
                     END as horario,
                     TO_CHAR(f.fecha_hora_inicio, 'HH24:MI') as hora_inicio, 
                     TO_CHAR(f.fecha_hora_fin, 'HH24:MI') as hora_fin,
-                    COUNT(f.id_funcion) as total_funciones
+                    COUNT(f.id_funcion) as total_funciones,
+                    COUNT(DISTINCT v.id_venta) as ventas_realizadas,
+                    SUM(v.cantidad_boletos) as total_boletos_vendidos
                 FROM funciones f
+                LEFT JOIN ventas v ON f.id_funcion = v.id_funcion AND v.estado = 'completada'
                 GROUP BY 
                     CASE 
                         WHEN EXTRACT(HOUR FROM f.fecha_hora_inicio) < 12 THEN 'Mañana'
@@ -309,7 +346,7 @@ const getFuncionesQuery = (reportType) => {
                     END,
                     TO_CHAR(f.fecha_hora_inicio, 'HH24:MI'), 
                     TO_CHAR(f.fecha_hora_fin, 'HH24:MI')
-                ORDER BY total_funciones DESC
+                ORDER BY total_boletos_vendidos DESC NULLS LAST, total_funciones DESC
             `;
         case 'funciones más vendidas en los ultimos 30 días':
         case 'funciones más vendidas en los últimos 30 días':
@@ -318,17 +355,27 @@ const getFuncionesQuery = (reportType) => {
                        TO_CHAR(f.fecha_hora_inicio, 'HH24:MI') as hora_inicio, 
                        TO_CHAR(f.fecha_hora_fin, 'HH24:MI') as hora_fin, 
                        f.estado as tipo,
-                       p.titulo as pelicula
+                       p.titulo as pelicula,
+                       COUNT(DISTINCT v.id_venta) as ventas_realizadas,
+                       SUM(v.cantidad_boletos) as boletos_vendidos,
+                       SUM(v.total) as ingresos
                 FROM funciones f
                 JOIN peliculas p ON f.id_pelicula = p.id_pelicula
+                LEFT JOIN ventas v ON f.id_funcion = v.id_funcion AND v.estado = 'completada'
                 WHERE DATE(f.fecha_hora_inicio) >= CURRENT_DATE - INTERVAL '30 days'
-                ORDER BY f.fecha_hora_inicio DESC
+                GROUP BY f.id_funcion, f.fecha_hora_inicio, f.fecha_hora_fin, f.estado, p.titulo
+                HAVING SUM(v.cantidad_boletos) > 0
+                ORDER BY boletos_vendidos DESC, ingresos DESC
                 LIMIT 30
             `;
         case 'funciones por tipo':
             return `
-                SELECT f.estado as tipo, COUNT(f.id_funcion) as total_funciones
+                SELECT f.estado as tipo, 
+                       COUNT(f.id_funcion) as total_funciones,
+                       COUNT(DISTINCT v.id_venta) as ventas_realizadas,
+                       SUM(v.cantidad_boletos) as boletos_vendidos
                 FROM funciones f
+                LEFT JOIN ventas v ON f.id_funcion = v.id_funcion AND v.estado = 'completada'
                 GROUP BY f.estado
                 ORDER BY total_funciones DESC
             `;
@@ -438,6 +485,9 @@ const getUsuariosQuery = (reportType) => {
 const generatePDF = async (data, category, reportType) => {
     return new Promise(async (resolve, reject) => {
         try {
+            // === CARGAR LOGO ===
+            const logoBuffer = await cargarLogoSVG();
+            
             // === CONFIGURACIÓN OPTIMIZADA DEL DOCUMENTO ===
             const doc = new PDFDocument({ 
                 margin: 40,
@@ -490,7 +540,7 @@ const generatePDF = async (data, category, reportType) => {
                 return doc;
             };
 
-            // === HEADER PROFESIONAL ESTILO FACTURA ===
+            // === HEADER PROFESIONAL ESTILO FACTURA CON LOGO ===
             const pageWidth = doc.page.width;
             const pageHeight = doc.page.height;
             
@@ -502,16 +552,27 @@ const generatePDF = async (data, category, reportType) => {
             roundedRect(0, 90, pageWidth, 8, 0)
                 .fill(colors.headerAccent);
             
-            // === TÍTULO PRINCIPAL ===
-            doc.fillColor('#FFFFFF')
-               .fontSize(28)
-               .font('Helvetica-Bold')
-               .text('CineByte', 50, 25);
+            // === LOGO Y TÍTULO PRINCIPAL ===
+            if (logoBuffer) {
+                // Agregar logo
+                doc.image(logoBuffer, 50, 15, { width: 30, height: 30 });
+                // Título al lado del logo
+                doc.fillColor('#FFFFFF')
+                   .fontSize(28)
+                   .font('Helvetica-Bold')
+                   .text('CineByte', 110, 25);
+            } else {
+                // Sin logo, solo título
+                doc.fillColor('#FFFFFF')
+                   .fontSize(28)
+                   .font('Helvetica-Bold')
+                   .text('CineByte', 50, 25);
+            }
                
             doc.fontSize(12)
                .font('Helvetica')
                .fillColor('#E2E8F0')
-               .text('Sistema de Gestión Cinematográfica', 50, 60);
+               .text('Sistema de Gestión Cinematográfica', logoBuffer ? 110 : 50, 60);
 
             // Info de documento en la esquina derecha
             const infoBoxX = pageWidth - 200;
@@ -809,6 +870,23 @@ export const generarFacturaPDF = async (ventaId, firebase_uid) => {
     try {
         console.log('🧾 Generando factura PDF para venta:', ventaId);
         
+        // === OBTENER DATOS DEL USUARIO DE FIREBASE ===
+        let datosUsuario = {
+            nombre: 'Cliente',
+            email: 'N/A'
+        };
+        
+        try {
+            const usuarioFirebase = await admin.auth().getUser(firebase_uid);
+            datosUsuario = {
+                nombre: usuarioFirebase.displayName || usuarioFirebase.email?.split('@')[0] || 'Cliente',
+                email: usuarioFirebase.email || 'N/A'
+            };
+            console.log('👤 Datos del usuario obtenidos:', datosUsuario);
+        } catch (error) {
+            console.warn('⚠️ Error obteniendo datos de Firebase, usando valores por defecto:', error.message);
+        }
+        
         // Obtener datos completos de la venta con JOIN mejorado
         const query = `
             SELECT 
@@ -855,12 +933,15 @@ export const generarFacturaPDF = async (ventaId, firebase_uid) => {
                 fd.precio_unitario as detalle_precio_unitario,
                 fd.subtotal as detalle_subtotal,
                 
-                -- Datos adicionales de función y película (por si no están en factura)
+                -- Datos REALES de función y película
                 pel.titulo as pelicula_titulo_real,
                 sal.nombre as sala_nombre_real,
                 fun.fecha_hora_inicio,
                 fun.fecha_hora_fin,
-                i.nombre as idioma_real
+                i.nombre as idioma_real,
+                TO_CHAR(fun.fecha_hora_inicio, 'HH24:MI') as hora_inicio_real,
+                TO_CHAR(fun.fecha_hora_fin, 'HH24:MI') as hora_fin_real,
+                DATE(fun.fecha_hora_inicio) as fecha_funcion_real
                 
             FROM ventas v
             LEFT JOIN facturas f ON v.id_venta = f.id_venta
@@ -884,7 +965,22 @@ export const generarFacturaPDF = async (ventaId, firebase_uid) => {
         }
         
         // Agrupar datos
-        const ventaData = result.rows[0];
+        let ventaData = result.rows[0];
+        
+        // === COMBINAR DATOS DE FIREBASE CON DATOS DE BD ===
+        ventaData = {
+            ...ventaData,
+            cliente_nombre: datosUsuario.nombre,
+            cliente_email: datosUsuario.email,
+            // Usar datos reales de la función si están disponibles
+            pelicula_titulo: ventaData.pelicula_titulo_real || ventaData.pelicula_titulo || 'N/A',
+            sala_nombre: ventaData.sala_nombre_real || ventaData.sala_nombre || 'N/A',
+            hora_inicio: ventaData.hora_inicio_real || ventaData.hora_inicio || 'N/A',
+            hora_fin: ventaData.hora_fin_real || ventaData.hora_fin || 'N/A',
+            fecha_funcion: ventaData.fecha_funcion_real || ventaData.fecha_funcion || new Date(),
+            idioma: ventaData.idioma_real || ventaData.idioma || 'N/A'
+        };
+        
         const asientos = result.rows
             .filter(row => row.numero_asiento)
             .map(row => ({
@@ -904,9 +1000,35 @@ export const generarFacturaPDF = async (ventaId, firebase_uid) => {
         console.log('📊 Datos de factura obtenidos:', {
             venta: ventaData.id_venta,
             factura: ventaData.numero_factura,
+            cliente: ventaData.cliente_nombre,
+            email: ventaData.cliente_email,
+            pelicula: ventaData.pelicula_titulo,
+            sala: ventaData.sala_nombre,
             asientos: asientos.length,
             detalles: detalles.length
         });
+        
+        // === ENVIAR CORREO DE CONFIRMACIÓN ===
+        try {
+            if (datosUsuario.email && datosUsuario.email !== 'N/A') {
+                await enviarCorreoConfirmacionCompra({
+                    emailCliente: datosUsuario.email,
+                    nombreCliente: datosUsuario.nombre,
+                    pelicula: ventaData.pelicula_titulo,
+                    sala: ventaData.sala_nombre,
+                    fechaFuncion: ventaData.fecha_funcion,
+                    horarioInicio: ventaData.hora_inicio,
+                    horarioFin: ventaData.hora_fin,
+                    asientos: asientos,
+                    total: ventaData.total || ventaData.factura_total || 0,
+                    numeroFactura: ventaData.numero_factura || ventaData.id_venta
+                });
+                console.log('📧 Correo de confirmación enviado exitosamente');
+            }
+        } catch (emailError) {
+            console.warn('⚠️ Error enviando correo de confirmación:', emailError.message);
+            // No lanzar error, continuar con la generación del PDF
+        }
         
         // Generar PDF
         const pdfBuffer = await generarFacturaPDFBuffer({
@@ -930,8 +1052,11 @@ export const generarFacturaPDF = async (ventaId, firebase_uid) => {
 
 // Función para generar el buffer del PDF de factura
 const generarFacturaPDFBuffer = async (data) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try {
+            // === CARGAR LOGO ===
+            const logoBuffer = await cargarLogoSVG();
+            
             const doc = new PDFDocument({ 
                 margin: 40,
                 size: 'A4',
@@ -975,7 +1100,7 @@ const generarFacturaPDFBuffer = async (data) => {
             doc.rect(0, 0, doc.page.width, doc.page.height)
                .fill('#F8F9FA');
 
-            // === HEADER PROFESIONAL ESTILO IGUAL A OTRAS EXPORTACIONES ===
+            // === HEADER PROFESIONAL ESTILO IGUAL A OTRAS EXPORTACIONES CON LOGO ===
             // Fondo del header con degradado simulado
             roundedRect(0, 0, pageWidth, 120, 0)
                 .fill(colors.headerDark);
@@ -984,16 +1109,27 @@ const generarFacturaPDFBuffer = async (data) => {
             roundedRect(0, 90, pageWidth, 8, 0)
                 .fill(colors.headerAccent);
             
-            // === TÍTULO PRINCIPAL ===
-            doc.fillColor('#FFFFFF')
-               .fontSize(28)
-               .font('Helvetica-Bold')
-               .text('CineByte', 50, 25);
+            // === LOGO Y TÍTULO PRINCIPAL ===
+            if (logoBuffer) {
+                // Agregar logo
+                doc.image(logoBuffer, 50, 15, { width: 30, height: 30 });
+                // Título al lado del logo
+                doc.fillColor('#FFFFFF')
+                   .fontSize(28)
+                   .font('Helvetica-Bold')
+                   .text('CineByte', 110, 25);
+            } else {
+                // Sin logo, solo título
+                doc.fillColor('#FFFFFF')
+                   .fontSize(28)
+                   .font('Helvetica-Bold')
+                   .text('CineByte', 50, 25);
+            }
                
             doc.fontSize(12)
                .font('Helvetica')
                .fillColor('#E2E8F0')
-               .text('Sistema de Gestión Cinematográfica', 50, 60);
+               .text('Sistema de Gestión Cinematográfica', logoBuffer ? 110 : 50, 60);
 
             // Info de documento en la esquina derecha
             const infoBoxX = pageWidth - 200;
@@ -1202,4 +1338,55 @@ const generarFacturaPDFBuffer = async (data) => {
             reject(error);
         }
     });
+};
+
+// === FUNCIÓN HELPER PARA CARGAR LOGO SVG ===
+const cargarLogoSVG = async () => {
+    try {
+        const logoPath = path.join(process.cwd(), 'src', 'imagenes', 'branding', 'Isotipo blanco.svg');
+        const svgData = fs.readFileSync(logoPath, 'utf8');
+        
+        return new Promise((resolve, reject) => {
+            svg2img(svgData, { width: 40, height: 40 }, (error, buffer) => {
+                if (error) {
+                    console.warn('⚠️ Error convirtiendo SVG a imagen:', error);
+                    resolve(null);
+                } else {
+                    resolve(buffer);
+                }
+            });
+        });
+    } catch (error) {
+        console.warn('⚠️ Error cargando logo SVG:', error.message);
+        return null;
+    }
+};
+
+// Función para generar y posicionar logo en PDFs
+const posicionarLogoEnPDF = (doc, logoBuffer, colors) => {
+    if (logoBuffer) {
+        // Agregar logo más pequeño
+        doc.image(logoBuffer, 50, 20, { width: 30, height: 30 });
+        // Título al lado del logo
+        doc.fillColor('#FFFFFF')
+           .fontSize(28)
+           .font('Helvetica-Bold')
+           .text('CineByte', 90, 25);
+        
+        doc.fontSize(12)
+           .font('Helvetica')
+           .fillColor('#E2E8F0')
+           .text('Sistema de Gestión Cinematográfica', 90, 60);
+    } else {
+        // Sin logo, solo título
+        doc.fillColor('#FFFFFF')
+           .fontSize(28)
+           .font('Helvetica-Bold')
+           .text('CineByte', 50, 25);
+           
+        doc.fontSize(12)
+           .font('Helvetica')
+           .fillColor('#E2E8F0')
+           .text('Sistema de Gestión Cinematográfica', 50, 60);
+    }
 };
