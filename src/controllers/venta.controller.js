@@ -266,6 +266,81 @@ class VentaController {
             });
         }
     }
+
+    // Obtener asientos disponibles para una función específica
+    async obtenerAsientosDisponiblesPorFuncion(req, res) {
+        try {
+            const { id_sala, id_funcion } = req.params;
+            
+            if (!id_sala || !id_funcion) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Se requieren id_sala e id_funcion'
+                });
+            }
+            
+            const asientos = await ventaService.obtenerAsientosDisponiblesPorFuncion(id_sala, id_funcion);
+            
+            res.json({
+                success: true,
+                data: asientos
+            });
+        } catch (error) {
+            console.error('Error al obtener asientos disponibles por función:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error interno del servidor',
+                error: error.message
+            });
+        }
+    }
+
+    // Obtener estadísticas de ocupación de una función
+    async obtenerOcupacionPorFuncion(req, res) {
+        try {
+            const { id_funcion } = req.params;
+            
+            if (!id_funcion) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Se requiere id_funcion'
+                });
+            }
+            
+            const ocupacion = await ventaService.obtenerOcupacionPorFuncion(id_funcion);
+            
+            res.json({
+                success: true,
+                data: ocupacion
+            });
+        } catch (error) {
+            console.error('Error al obtener ocupación por función:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error interno del servidor',
+                error: error.message
+            });
+        }
+    }
+
+    // 🔧 TEMPORAL: Verificar estructura de base de datos
+    async verificarEstructuraBD(req, res) {
+        try {
+            const resultado = await ventaService.verificarEstructuraBD();
+            
+            res.json({
+                success: true,
+                data: resultado
+            });
+        } catch (error) {
+            console.error('Error al verificar estructura BD:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error interno del servidor',
+                error: error.message
+            });
+        }
+    }
 }
 
 export default new VentaController();

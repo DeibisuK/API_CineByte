@@ -144,7 +144,7 @@ export const removeMultiple = async (req, res) => {
 
 export const getSalasDisponibles = async (req, res) => {
     try {
-        const data = await service.getSalasDisponibles(req.params.id_sede);
+        const data = await service.getSalasDisponibles();
         res.json(data);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -154,6 +154,15 @@ export const getSalasDisponibles = async (req, res) => {
 export const getSedesDisponibles = async (req, res) => {
     try {
         const data = await service.getSedesDisponibles(req.params.id_sala);
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+export const checkSalaAssigned = async (req, res) => {
+    try {
+        const data = await service.checkSalaAssigned(req.params.id_sala);
         res.json(data);
     } catch (err) {
         res.status(500).json({ error: err.message });

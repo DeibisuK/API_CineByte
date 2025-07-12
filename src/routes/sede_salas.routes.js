@@ -18,7 +18,10 @@ router.get('/sede/:id_sede', controller.getBySede);
 router.get('/sala/:id_sala', controller.getBySala);
 
 // Rutas para obtener disponibles
-router.get('/disponibles/salas/:id_sede', controller.getSalasDisponibles);
+router.get('/disponibles/salas', controller.getSalasDisponibles);
 router.get('/disponibles/sedes/:id_sala', controller.getSedesDisponibles);
+
+// Ruta para verificar si una sala está asignada
+router.get('/check-sala/:id_sala', controller.checkSalaAssigned);
 
 export default router;

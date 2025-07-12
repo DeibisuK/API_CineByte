@@ -1,7 +1,6 @@
 import express from 'express';
 import {
   getAsientosPorSala,
-  getByEstado,
   create,
   getAll,
   getById,
@@ -17,7 +16,5 @@ router.get('/:id', getById);
 router.put('/:id', update);
 router.delete('/:id', remove);
 router.get('/asientos/:id', getAsientosPorSala);
-router.get('/estado/:estado', getByEstado);
-
 
 export default router;

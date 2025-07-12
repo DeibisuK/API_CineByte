@@ -61,10 +61,14 @@ export const deleteMultipleSedesSalas = async (ids) => {
     return await model.removeMultiple(ids);
 };
 
-export const getSalasDisponibles = async (id_sede) => {
-    return await model.getSalasDisponibles(id_sede);
+export const getSalasDisponibles = async () => {
+    return await model.getSalasDisponibles();
 };
 
 export const getSedesDisponibles = async (id_sala) => {
     return await model.getSedesDisponibles(id_sala);
+};
+
+export const checkSalaAssigned = async (id_sala) => {
+    return await model.checkSalaAssigned(id_sala);
 };

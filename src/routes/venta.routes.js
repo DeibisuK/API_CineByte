@@ -9,12 +9,6 @@ router.post('/', ventaController.procesarVenta);
 // Obtener historial de ventas
 router.get('/historial', ventaController.obtenerHistorial);
 
-// Obtener venta por ID
-router.get('/:id', ventaController.obtenerVentaPorId);
-
-// Cancelar venta
-router.patch('/:id/cancelar', ventaController.cancelarVenta);
-
 // Obtener estadísticas
 router.get('/estadisticas', ventaController.obtenerEstadisticas);
 
@@ -24,13 +18,25 @@ router.post('/verificar-asientos', ventaController.verificarAsientos);
 // Calcular resumen de venta
 router.post('/resumen', ventaController.calcularResumen);
 
+// Validar cupón de descuento
+router.post('/validar-cupon', ventaController.validarCupon);
+
+// Obtener asientos disponibles para una función específica
+router.get('/asientos-disponibles/:id_sala/:id_funcion', ventaController.obtenerAsientosDisponiblesPorFuncion);
+
+// Obtener ocupación de una función específica
+router.get('/ocupacion/:id_funcion', ventaController.obtenerOcupacionPorFuncion);
+
+// Obtener venta por ID
+router.get('/:id', ventaController.obtenerVentaPorId);
+
+// Cancelar venta
+router.patch('/:id/cancelar', ventaController.cancelarVenta);
+
 // Obtener QR de venta
 router.get('/:id/qr', ventaController.obtenerQR);
 
 // Reenviar factura por email
 router.post('/:id/reenviar-factura', ventaController.reenviarFactura);
-
-// Validar cupón de descuento
-router.post('/validar-cupon', ventaController.validarCupon);
 
 export default router;

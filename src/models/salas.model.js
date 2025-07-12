@@ -33,11 +33,6 @@ export const remove = async (id) => {
     await db.query('DELETE FROM salas WHERE id_sala = $1', [id]);
 };
 
-export const findByEstado = async (estado) => {
-    const result = await db.query('SELECT * FROM salas WHERE estado = $1 ORDER BY nombre', [estado]);
-    return result.rows;
-};
-
 export const obtenerAsientosPorSala = async (id) => {
     const query = 'SELECT * FROM asientos WHERE id_sala = $1 ORDER BY fila, columna;';
     const result = await db.query(query, [id]);

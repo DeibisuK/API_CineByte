@@ -1,4 +1,4 @@
-import {insert,update,remove,findAll,findById,findByEstado,obtenerAsientosPorSala
+import {insert,update,remove,findAll,findById,obtenerAsientosPorSala
 } from '../models/salas.model.js';
 
 export const createSala = async (datosSala) => {
@@ -22,8 +22,4 @@ export const deleteSala = async (id) => {
 };
 export const getAsientos = async (id) => {
   return await obtenerAsientosPorSala(id);
-};
-
-export const getSalasByEstado = async (estado) => {
-    return await findByEstado(estado);
 };

@@ -50,7 +50,7 @@ class VentaService {
 
             // 2. Crear asientos de la venta
             console.log('Creando asientos de venta...');
-            const ventaAsientos = await VentaAsientoModel.createMultiple(venta.id_venta, asientos);
+            const ventaAsientos = await VentaAsientoModel.createMultiple(venta.id_venta, asientos, funcion_id);
             console.log('Asientos creados:', ventaAsientos);
 
             // 3. Crear el pago
@@ -213,51 +213,55 @@ class VentaService {
     }
 
     async verificarDisponibilidadAsientos(funcion_id, asientos) {
-        const client = await db.connect();
         try {
-            // Verificar primero si hay tablas y datos
-            const checkTablesQuery = `
-                SELECT table_name 
-                FROM information_schema.tables 
-                WHERE table_schema = 'public' 
-                AND table_name IN ('ventas', 'venta_asientos')
-            `;
-            const tablesResult = await client.query(checkTablesQuery);
+            console.log('🔍 Verificando disponibilidad:', { funcion_id, asientos });
             
-            if (tablesResult.rows.length < 2) {
-                console.log('Tablas no encontradas, asumiendo todos los asientos disponibles');
-                return {
-                    disponibles: true,
-                    asientos_ocupados: []
-                };
+            // Convertir asientos a array de IDs si es necesario
+            let asientos_ids;
+            if (Array.isArray(asientos)) {
+                // Si es array de strings/números, usar directamente
+                if (typeof asientos[0] === 'string' || typeof asientos[0] === 'number') {
+                    asientos_ids = asientos.map(id => parseInt(id));
+                } else {
+                    // Si es array de objetos, extraer id_asiento
+                    asientos_ids = asientos.map(asiento => asiento.id_asiento);
+                }
+            } else {
+                throw new Error('asientos debe ser un array');
             }
-
-            const query = `
-                SELECT va.numero_asiento 
-                FROM venta_asientos va
-                INNER JOIN ventas v ON va.id_venta = v.id_venta
-                WHERE v.id_funcion = $1 
-                AND v.estado IN ('confirmada', 'pendiente')
-                AND va.numero_asiento = ANY($2::text[])
-            `;
             
-            const result = await client.query(query, [funcion_id, asientos]);
-            const asientosOcupados = result.rows.map(row => row.numero_asiento);
+            console.log('🎯 IDs de asientos procesados:', asientos_ids);
+            
+            // 🔧 SIMPLIFICADO: Solo verificar si están ocupados
+            const asientosOcupados = await VentaAsientoModel.checkAsientosOcupadosEnFuncion(
+                funcion_id, 
+                asientos_ids
+            );
+            
+            console.log('🚫 Asientos ocupados encontrados:', asientosOcupados);
+            
+            // Si no hay asientos ocupados, todos están disponibles
+            const disponibles = asientosOcupados.length === 0;
             
             return {
-                disponibles: asientosOcupados.length === 0,
-                asientos_ocupados: asientosOcupados
+                disponibles: disponibles,
+                asientos_ocupados: asientosOcupados.map(row => row.id_asiento),
+                funcion_id: funcion_id,
+                total_verificados: asientos_ids.length,
+                debug: {
+                    input_asientos: asientos,
+                    processed_ids: asientos_ids,
+                    ocupados_count: asientosOcupados.length
+                }
             };
         } catch (error) {
             console.error('Error en verificarDisponibilidadAsientos:', error);
-            // En caso de error, asumimos que los asientos están disponibles
+            // En caso de error, asumimos que los asientos NO están disponibles por seguridad
             return {
-                disponibles: true,
+                disponibles: false,
                 asientos_ocupados: [],
                 error: error.message
             };
-        } finally {
-            client.release();
         }
     }
 
@@ -338,6 +342,33 @@ class VentaService {
             total_con_descuento: totalConDescuento,
             mensaje: `Descuento del ${cupon.porcentaje}% aplicado`
         };
+    }
+
+    async obtenerAsientosDisponiblesPorFuncion(id_sala, id_funcion) {
+        try {
+            return await VentaAsientoModel.getAsientosDisponiblesPorFuncion(id_sala, id_funcion);
+        } catch (error) {
+            console.error('Error al obtener asientos disponibles por función:', error);
+            throw error;
+        }
+    }
+
+    async obtenerOcupacionPorFuncion(id_funcion) {
+        try {
+            return await VentaAsientoModel.getOcupacionPorFuncion(id_funcion);
+        } catch (error) {
+            console.error('Error al obtener ocupación por función:', error);
+            throw error;
+        }
+    }
+
+    async verificarEstructuraBD() {
+        try {
+            return await VentaAsientoModel.verificarEstructuraBD();
+        } catch (error) {
+            console.error('Error al verificar estructura BD:', error);
+            throw error;
+        }
     }
 }
 
