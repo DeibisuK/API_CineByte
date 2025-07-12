@@ -45,8 +45,7 @@ export const getAvailableReports = async (req, res) => {
 
 export const generarFacturaPDF = async (req, res) => {
     try {
-        const { ventaId } = req.params;
-        const { firebase_uid } = req.query;
+        const { ventaId, firebase_uid } = req.params;
 
         if (!ventaId) {
             return res.status(400).json({

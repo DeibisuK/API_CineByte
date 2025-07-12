@@ -123,3 +123,82 @@ export const update = async (id, {
 export const remove = async (id) => {
     await db.query('DELETE FROM peliculas WHERE id_pelicula = $1', [id]);
 }
+
+// Métodos alternativos que no dependen de funciones almacenadas
+export const findAllCompleteAlternative = async () => {
+    const query = `
+        SELECT 
+            p.*,
+            COALESCE(
+                (SELECT json_agg(json_build_object('id_genero', pg.id_genero, 'nombre', g.nombre))
+                 FROM pelicula_generos pg 
+                 JOIN generos g ON pg.id_genero = g.id_genero 
+                 WHERE pg.id_pelicula = p.id_pelicula), 
+                '[]'::json
+            ) as generos,
+            COALESCE(
+                (SELECT json_agg(json_build_object('id_actor', pa.id_actor, 'nombre', a.nombre))
+                 FROM pelicula_actores pa 
+                 JOIN actores a ON pa.id_actor = a.id_actor 
+                 WHERE pa.id_pelicula = p.id_pelicula), 
+                '[]'::json
+            ) as actores,
+            COALESCE(
+                (SELECT json_agg(json_build_object('id_etiqueta', ep.id_etiqueta, 'nombre', e.nombre))
+                 FROM etiquetas_pelicula ep 
+                 JOIN etiquetas e ON ep.id_etiqueta = e.id_etiqueta 
+                 WHERE ep.id_pelicula = p.id_pelicula), 
+                '[]'::json
+            ) as etiquetas,
+            COALESCE(
+                (SELECT json_agg(json_build_object('id_idioma', pi.id_idioma, 'nombre', i.nombre))
+                 FROM pelicula_idiomas pi 
+                 JOIN idiomas i ON pi.id_idioma = i.id_idioma 
+                 WHERE pi.id_pelicula = p.id_pelicula), 
+                '[]'::json
+            ) as idiomas
+        FROM peliculas p
+        ORDER BY p.fecha_estreno DESC
+    `;
+    const result = await db.query(query);
+    return result.rows;
+};
+
+export const findByIdCompleteAlternative = async (id) => {
+    const query = `
+        SELECT 
+            p.*,
+            COALESCE(
+                (SELECT json_agg(json_build_object('id_genero', pg.id_genero, 'nombre', g.nombre))
+                 FROM pelicula_generos pg 
+                 JOIN generos g ON pg.id_genero = g.id_genero 
+                 WHERE pg.id_pelicula = p.id_pelicula), 
+                '[]'::json
+            ) as generos,
+            COALESCE(
+                (SELECT json_agg(json_build_object('id_actor', pa.id_actor, 'nombre', a.nombre))
+                 FROM pelicula_actores pa 
+                 JOIN actores a ON pa.id_actor = a.id_actor 
+                 WHERE pa.id_pelicula = p.id_pelicula), 
+                '[]'::json
+            ) as actores,
+            COALESCE(
+                (SELECT json_agg(json_build_object('id_etiqueta', ep.id_etiqueta, 'nombre', e.nombre))
+                 FROM etiquetas_pelicula ep 
+                 JOIN etiquetas e ON ep.id_etiqueta = e.id_etiqueta 
+                 WHERE ep.id_pelicula = p.id_pelicula), 
+                '[]'::json
+            ) as etiquetas,
+            COALESCE(
+                (SELECT json_agg(json_build_object('id_idioma', pi.id_idioma, 'nombre', i.nombre))
+                 FROM pelicula_idiomas pi 
+                 JOIN idiomas i ON pi.id_idioma = i.id_idioma 
+                 WHERE pi.id_pelicula = p.id_pelicula), 
+                '[]'::json
+            ) as idiomas
+        FROM peliculas p
+        WHERE p.id_pelicula = $1
+    `;
+    const result = await db.query(query, [id]);
+    return result.rows[0];
+};

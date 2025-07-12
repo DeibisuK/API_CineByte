@@ -809,7 +809,7 @@ export const generarFacturaPDF = async (ventaId, firebase_uid) => {
     try {
         console.log('🧾 Generando factura PDF para venta:', ventaId);
         
-        // Obtener datos completos de la venta con JOIN
+        // Obtener datos completos de la venta con JOIN mejorado
         const query = `
             SELECT 
                 v.id_venta,
@@ -822,6 +822,7 @@ export const generarFacturaPDF = async (ventaId, firebase_uid) => {
                 v.total,
                 v.estado as venta_estado,
                 
+                -- Datos de la factura
                 f.id_factura,
                 f.numero_factura,
                 f.fecha_emision,
@@ -838,26 +839,42 @@ export const generarFacturaPDF = async (ventaId, firebase_uid) => {
                 f.iva_valor,
                 f.total as factura_total,
                 
+                -- Datos del pago
                 p.id_pago,
                 p.id_metodo_pago,
                 p.monto,
                 p.fecha_pago,
                 
-                va.numero_asiento,
+                -- Datos de asientos
+                CONCAT(a.fila, a.columna) as numero_asiento,
                 va.precio_unitario,
                 
+                -- Datos de detalles de factura
                 fd.descripcion as detalle_descripcion,
                 fd.cantidad as detalle_cantidad,
                 fd.precio_unitario as detalle_precio_unitario,
-                fd.subtotal as detalle_subtotal
+                fd.subtotal as detalle_subtotal,
+                
+                -- Datos adicionales de función y película (por si no están en factura)
+                pel.titulo as pelicula_titulo_real,
+                sal.nombre as sala_nombre_real,
+                fun.fecha_hora_inicio,
+                fun.fecha_hora_fin,
+                i.nombre as idioma_real
                 
             FROM ventas v
             LEFT JOIN facturas f ON v.id_venta = f.id_venta
             LEFT JOIN pagos p ON v.id_venta = p.id_venta
             LEFT JOIN venta_asientos va ON v.id_venta = va.id_venta
+            LEFT JOIN asientos a ON va.id_asiento = a.id_asiento
             LEFT JOIN factura_detalles fd ON f.id_factura = fd.id_factura
+            -- JOINs adicionales para obtener datos reales
+            LEFT JOIN funciones fun ON v.id_funcion = fun.id_funcion
+            LEFT JOIN peliculas pel ON fun.id_pelicula = pel.id_pelicula
+            LEFT JOIN salas sal ON fun.id_sala = sal.id_sala
+            LEFT JOIN idiomas i ON fun.id_idioma = i.id_idioma
             WHERE v.id_venta = $1 AND v.firebase_uid = $2
-            ORDER BY va.id_venta_asiento, fd.id_detalle
+            ORDER BY va.id_venta, va.id_asiento, fd.id_detalle
         `;
         
         const result = await db.query(query, [ventaId, firebase_uid]);
@@ -915,7 +932,14 @@ export const generarFacturaPDF = async (ventaId, firebase_uid) => {
 const generarFacturaPDFBuffer = async (data) => {
     return new Promise((resolve, reject) => {
         try {
-            const doc = new PDFDocument({ margin: 50 });
+            const doc = new PDFDocument({ 
+                margin: 40,
+                size: 'A4',
+                layout: 'portrait',
+                bufferPages: false,
+                autoFirstPage: true,
+                compress: false
+            });
             const chunks = [];
             
             doc.on('data', chunks.push.bind(chunks));
@@ -924,156 +948,254 @@ const generarFacturaPDFBuffer = async (data) => {
                 resolve(pdfBuffer);
             });
             
-            // Configurar colores
-            const primaryColor = '#2c3e50';
-            const accentColor = '#e74c3c';
-            const lightGray = '#ecf0f1';
+            // === PALETA DE COLORES IGUAL A LAS OTRAS EXPORTACIONES ===
+            const colors = {
+                headerDark: '#121212',
+                headerAccent: '#ffc800',
+                primary: '#333',
+                secondary: '#585858',
+                accent: '#ffc800',
+                cardBg: '#e7e7e7',
+                tableBg: '#FFFFFF',
+                altRow: '#f1f1f1',
+                border: '#ff0000',
+                divider: '#ffc800'
+            };
+
+            // === HELPER PARA RECTÁNGULOS REDONDEADOS ===
+            const roundedRect = (x, y, w, h, r = 3) => {
+                doc.roundedRect(x, y, w, h, r);
+                return doc;
+            };
+
+            const pageWidth = doc.page.width;
+            const pageHeight = doc.page.height;
             
-            // Header con logo y título
-            doc.fillColor(primaryColor)
-               .fontSize(24)
+            // Color del fondo del documento
+            doc.rect(0, 0, doc.page.width, doc.page.height)
+               .fill('#F8F9FA');
+
+            // === HEADER PROFESIONAL ESTILO IGUAL A OTRAS EXPORTACIONES ===
+            // Fondo del header con degradado simulado
+            roundedRect(0, 0, pageWidth, 120, 0)
+                .fill(colors.headerDark);
+            
+            // Banda naranja de acento
+            roundedRect(0, 90, pageWidth, 8, 0)
+                .fill(colors.headerAccent);
+            
+            // === TÍTULO PRINCIPAL ===
+            doc.fillColor('#FFFFFF')
+               .fontSize(28)
                .font('Helvetica-Bold')
-               .text('CINEBYTE', 50, 50);
+               .text('CineByte', 50, 25);
+               
+            doc.fontSize(12)
+               .font('Helvetica')
+               .fillColor('#E2E8F0')
+               .text('Sistema de Gestión Cinematográfica', 50, 60);
+
+            // Info de documento en la esquina derecha
+            const infoBoxX = pageWidth - 200;
+            roundedRect(infoBoxX, 25, 170, 50, 3)
+                .fill('#FFFFFF');
+                
+            doc.fillColor(colors.primary)
+               .fontSize(10)
+               .font('Helvetica-Bold')
+               .text('FACTURA GENERADA', infoBoxX + 15, 35)
+               .fontSize(9)
+               .font('Helvetica')
+               .text(`Fecha: ${new Date().toLocaleDateString('es-ES')}`, infoBoxX + 15, 50)
+               .text(`Hora: ${new Date().toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'})}`, infoBoxX + 15, 62);
+
+            let currentY = 140;
+
+            // === INFORMACIÓN DEL REPORTE (ESTILO IGUAL A OTRAS EXPORTACIONES) ===
+            // Contenedor principal del reporte
+            roundedRect(40, currentY, pageWidth - 80, 70, 5)
+                .fill(colors.cardBg);
+                
+            // Banda lateral de color
+            roundedRect(45, currentY + 5, 6, 60, 2)
+                .fill(colors.accent);
+                
+            doc.fillColor(colors.primary)
+               .fontSize(18)
+               .font('Helvetica-Bold')
+               .text('FACTURA DE COMPRA', 65, currentY + 15);
+               
+            doc.fontSize(14)
+               .font('Helvetica')
+               .fillColor(colors.secondary)
+               .text(`Número: ${data.venta.numero_factura || data.venta.id_venta}`, 65, currentY + 40);
+
+            currentY += 90;
+
+            // === INFORMACIÓN DE LA EMPRESA CORREGIDA ===
+            roundedRect(40, currentY, (pageWidth - 80) / 2 - 10, 80, 5)
+                .fill(colors.tableBg);
+                
+            doc.fillColor(colors.primary)
+               .fontSize(12)
+               .font('Helvetica-Bold')
+               .text('INFORMACIÓN DE LA EMPRESA', 50, currentY + 10);
             
-            doc.fillColor(accentColor)
+            doc.font('Helvetica')
+               .fontSize(10)
+               .text('CineByte S.A.S', 50, currentY + 30)
+               .text('contacto@cinebyte.com', 50, currentY + 45)
+               .text('Tel: (+593) 96 812 2692', 50, currentY + 60);
+
+            // === INFORMACIÓN DEL CLIENTE CORREGIDA ===
+            const clienteX = 40 + (pageWidth - 80) / 2 + 10;
+            roundedRect(clienteX, currentY, (pageWidth - 80) / 2 - 10, 80, 5)
+                .fill(colors.tableBg);
+                
+            doc.fillColor(colors.primary)
+               .fontSize(12)
+               .font('Helvetica-Bold')
+               .text('INFORMACIÓN DEL CLIENTE', clienteX + 10, currentY + 10);
+            
+            doc.font('Helvetica')
+               .fontSize(10)
+               .text(`Nombre: ${data.venta.cliente_nombre || 'Cliente'}`, clienteX + 10, currentY + 30)
+               .text(`Email: ${data.venta.cliente_email || 'N/A'}`, clienteX + 10, currentY + 45)
+               .text(`Teléfono: ${data.venta.cliente_telefono || 'N/A'}`, clienteX + 10, currentY + 60);
+
+            currentY += 100;
+            
+            currentY += 100;
+
+            // === INFORMACIÓN DE LA FUNCIÓN CORREGIDA ===
+            roundedRect(40, currentY, pageWidth - 80, 90, 5)
+                .fill(colors.cardBg);
+                
+            // Banda lateral de color
+            roundedRect(45, currentY + 5, 6, 80, 2)
+                .fill(colors.accent);
+                
+            doc.fillColor(colors.primary)
                .fontSize(14)
-               .font('Helvetica')
-               .text('FACTURA ELECTRÓNICA', 50, 80);
-            
-            // Información de la empresa (lado derecho)
-            doc.fillColor(primaryColor)
-               .fontSize(10)
-               .font('Helvetica')
-               .text('CineByte S.A.S', 400, 50)
-               .text('NIT: 900.123.456-7', 400, 65)
-               .text('Régimen Responsable de IVA', 400, 80)
-               .text('contacto@cinebyte.com', 400, 95)
-               .text('Tel: (57) 300 123 4567', 400, 110);
-            
-            // Línea separadora
-            doc.strokeColor(lightGray)
-               .lineWidth(1)
-               .moveTo(50, 130)
-               .lineTo(550, 130)
-               .stroke();
-            
-            // Información de la factura
-            const facturaY = 150;
-            doc.fillColor(primaryColor)
-               .fontSize(12)
                .font('Helvetica-Bold')
-               .text('INFORMACIÓN DE FACTURA', 50, facturaY);
+               .text('DETALLES DE LA FUNCIÓN', 65, currentY + 15);
             
             doc.font('Helvetica')
                .fontSize(10)
-               .text(`Número de Factura: ${data.venta.numero_factura || 'N/A'}`, 50, facturaY + 20)
-               .text(`Fecha de Emisión: ${new Date(data.venta.fecha_emision || data.venta.fecha_venta).toLocaleDateString('es-ES')}`, 50, facturaY + 35)
-               .text(`ID de Venta: ${data.venta.id_venta}`, 50, facturaY + 50);
+               .text(`Película: ${data.venta.pelicula_titulo || 'N/A'}`, 65, currentY + 40)
+               .text(`Sala: ${data.venta.sala_nombre || 'N/A'}`, 65, currentY + 55)
+               .text(`Fecha: ${data.venta.fecha_funcion ? new Date(data.venta.fecha_funcion).toLocaleDateString('es-ES') : 'N/A'}`, 65, currentY + 70)
+               .text(`Horario: ${data.venta.hora_inicio || 'N/A'} - ${data.venta.hora_fin || 'N/A'}`, 350, currentY + 40)
+               .text(`Idioma: ${data.venta.idioma || 'N/A'}`, 350, currentY + 55)
+               .text(`Asientos: ${data.asientos.map(a => a.numero_asiento).join(', ') || 'N/A'}`, 350, currentY + 70);
+
+            currentY += 110;
             
-            // Información del cliente
-            doc.font('Helvetica-Bold')
-               .text('INFORMACIÓN DEL CLIENTE', 300, facturaY);
+            currentY += 110;
+
+            // === TABLA DE DETALLES ESTILO IGUAL A OTRAS EXPORTACIONES ===
+            const tableWidth = pageWidth - 80;
+            const rowHeight = 25;
             
-            doc.font('Helvetica')
-               .text(`Nombre: ${data.venta.cliente_nombre || 'Cliente Genérico'}`, 300, facturaY + 20)
-               .text(`Email: ${data.venta.cliente_email || 'N/A'}`, 300, facturaY + 35)
-               .text(`Teléfono: ${data.venta.cliente_telefono || 'N/A'}`, 300, facturaY + 50);
+            // === ENCABEZADOS DE TABLA ===
+            roundedRect(40, currentY, tableWidth, rowHeight, 4)
+                .fill(colors.headerDark);
             
-            // Información de la función
-            const funcionY = facturaY + 80;
-            doc.fillColor(accentColor)
+            doc.fillColor('#FFFFFF')
+               .fontSize(9)
                .font('Helvetica-Bold')
-               .fontSize(12)
-               .text('DETALLES DE LA FUNCIÓN', 50, funcionY);
+               .text('DESCRIPCIÓN', 50, currentY + 10)
+               .text('CANT.', 280, currentY + 10)
+               .text('PRECIO UNIT.', 350, currentY + 10)
+               .text('SUBTOTAL', 450, currentY + 10);
             
-            doc.fillColor(primaryColor)
-               .font('Helvetica')
-               .fontSize(10)
-               .text(`Película: ${data.venta.pelicula_titulo || 'N/A'}`, 50, funcionY + 20)
-               .text(`Sala: ${data.venta.sala_nombre || 'N/A'}`, 50, funcionY + 35)
-               .text(`Fecha: ${data.venta.fecha_funcion ? new Date(data.venta.fecha_funcion).toLocaleDateString('es-ES') : 'N/A'}`, 50, funcionY + 50)
-               .text(`Horario: ${data.venta.hora_inicio || 'N/A'} - ${data.venta.hora_fin || 'N/A'}`, 300, funcionY + 20)
-               .text(`Idioma: ${data.venta.idioma || 'N/A'}`, 300, funcionY + 35)
-               .text(`Asientos: ${data.asientos.map(a => a.numero_asiento).join(', ')}`, 300, funcionY + 50);
+            currentY += rowHeight;
             
-            // Tabla de detalles
-            const tablaY = funcionY + 80;
-            doc.fillColor(lightGray)
-               .rect(50, tablaY, 500, 25)
-               .fill();
-            
-            doc.fillColor(primaryColor)
-               .font('Helvetica-Bold')
-               .fontSize(10)
-               .text('DESCRIPCIÓN', 60, tablaY + 8)
-               .text('CANT.', 300, tablaY + 8)
-               .text('PRECIO UNIT.', 350, tablaY + 8)
-               .text('SUBTOTAL', 450, tablaY + 8);
-            
-            let currentY = tablaY + 30;
+            // === FILAS DE DATOS ===
+            let rowIndex = 0;
             
             // Agregar detalles de la factura
             if (data.detalles && data.detalles.length > 0) {
-                data.detalles.forEach((detalle, index) => {
-                    doc.fillColor(primaryColor)
+                data.detalles.forEach((detalle) => {
+                    const bgColor = rowIndex % 2 === 0 ? colors.tableBg : colors.altRow;
+                    roundedRect(40, currentY, tableWidth, rowHeight, 2)
+                        .fill(bgColor);
+                    
+                    doc.fillColor(colors.primary)
                        .font('Helvetica')
                        .fontSize(9)
-                       .text(detalle.descripcion, 60, currentY)
-                       .text(detalle.cantidad.toString(), 300, currentY)
-                       .text(`$${detalle.precio_unitario.toLocaleString()}`, 350, currentY)
-                       .text(`$${detalle.subtotal.toLocaleString()}`, 450, currentY);
-                    currentY += 20;
+                       .text(detalle.descripcion, 50, currentY + 9)
+                       .text(detalle.cantidad.toString(), 280, currentY + 9)
+                       .text(`$${detalle.precio_unitario.toLocaleString()}`, 350, currentY + 9)
+                       .text(`$${detalle.subtotal.toLocaleString()}`, 450, currentY + 9);
+                    currentY += rowHeight;
+                    rowIndex++;
                 });
             } else {
                 // Si no hay detalles, mostrar asientos
-                data.asientos.forEach((asiento, index) => {
-                    doc.fillColor(primaryColor)
+                data.asientos.forEach((asiento) => {
+                    const bgColor = rowIndex % 2 === 0 ? colors.tableBg : colors.altRow;
+                    roundedRect(40, currentY, tableWidth, rowHeight, 2)
+                        .fill(bgColor);
+                    
+                    doc.fillColor(colors.primary)
                        .font('Helvetica')
                        .fontSize(9)
-                       .text(`Asiento ${asiento.numero_asiento}`, 60, currentY)
-                       .text('1', 300, currentY)
-                       .text(`$${asiento.precio_unitario.toLocaleString()}`, 350, currentY)
-                       .text(`$${asiento.precio_unitario.toLocaleString()}`, 450, currentY);
-                    currentY += 20;
+                       .text(`Asiento ${asiento.numero_asiento}`, 50, currentY + 9)
+                       .text('1', 280, currentY + 9)
+                       .text(`$${asiento.precio_unitario.toLocaleString()}`, 350, currentY + 9)
+                       .text(`$${asiento.precio_unitario.toLocaleString()}`, 450, currentY + 9);
+                    currentY += rowHeight;
+                    rowIndex++;
                 });
             }
             
-            // Totales
-            const totalesY = currentY + 20;
-            doc.strokeColor(lightGray)
-               .lineWidth(1)
-               .moveTo(350, totalesY)
-               .lineTo(550, totalesY)
-               .stroke();
+            // === TOTALES ESTILO IGUAL A OTRAS EXPORTACIONES ===
+            currentY += 20;
             
-            doc.fillColor(primaryColor)
+            // Caja de totales destacada
+            roundedRect(pageWidth - 220, currentY, 180, 80, 5)
+                .fill(colors.cardBg);
+                
+            doc.fillColor(colors.primary)
                .font('Helvetica')
                .fontSize(10)
-               .text(`Subtotal:`, 400, totalesY + 10)
-               .text(`$${(data.venta.subtotal || data.venta.factura_subtotal || 0).toLocaleString()}`, 480, totalesY + 10)
-               .text(`IVA (19%):`, 400, totalesY + 25)
-               .text(`$${(data.venta.iva || data.venta.iva_valor || 0).toLocaleString()}`, 480, totalesY + 25);
+               .text(`Subtotal:`, pageWidth - 210, currentY + 15)
+               .text(`$${(data.venta.subtotal || data.venta.factura_subtotal || 0).toLocaleString()}`, pageWidth - 120, currentY + 15)
+               .text(`IVA (19%):`, pageWidth - 210, currentY + 35)
+               .text(`$${(data.venta.iva || data.venta.iva_valor || 0).toLocaleString()}`, pageWidth - 120, currentY + 35);
             
             doc.font('Helvetica-Bold')
                .fontSize(12)
-               .text(`TOTAL:`, 400, totalesY + 45)
-               .text(`$${(data.venta.total || data.venta.factura_total || 0).toLocaleString()}`, 480, totalesY + 45);
+               .fillColor(colors.accent)
+               .text(`TOTAL:`, pageWidth - 210, currentY + 55)
+               .text(`$${(data.venta.total || data.venta.factura_total || 0).toLocaleString()}`, pageWidth - 120, currentY + 55);
             
-            // Footer
-            const footerY = totalesY + 80;
-            doc.strokeColor(lightGray)
-               .lineWidth(1)
-               .moveTo(50, footerY)
-               .lineTo(550, footerY)
-               .stroke();
+            currentY += 100;
+
+            // === FOOTER PROFESIONAL IGUAL A OTRAS EXPORTACIONES ===
+            const footerY = pageHeight - 80;
             
-            doc.fillColor(primaryColor)
-               .font('Helvetica')
-               .fontSize(8)
-               .text('Esta factura fue generada electrónicamente y tiene validez legal.', 50, footerY + 10)
-               .text('Para consultas: contacto@cinebyte.com | www.cinebyte.com', 50, footerY + 25)
-               .text(`Generado el: ${new Date().toLocaleString('es-ES')}`, 50, footerY + 40);
-            
+            if (currentY <= footerY - 20) {
+                // Línea divisoria elegante
+                doc.strokeColor(colors.accent)
+                   .lineWidth(2)
+                   .moveTo(40, footerY)
+                   .lineTo(pageWidth - 40, footerY)
+                   .stroke();
+                
+                // Información de la empresa
+                doc.fillColor(colors.secondary)
+                   .fontSize(8)
+                   .font('Helvetica')
+                   .text('CineByte - Sistema de Gestión Cinematográfica', 40, footerY + 15)
+                   .text('Esta factura fue generada digitalmente y es de simulación por el proyecto.', 40, footerY + 30)
+                   .text(`Generado el ${new Date().toLocaleString('es-ES')}`, 40, footerY + 45);
+                
+                // Contacto en la derecha
+                doc.text('contacto@cinebyte.com | (+593) 96 812 2692', pageWidth - 250, footerY + 15);
+            }
+
             doc.end();
             
         } catch (error) {

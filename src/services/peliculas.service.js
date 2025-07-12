@@ -5,7 +5,8 @@ export const getAllPeliculas = async () => {
 };
 
 export const getAllPeliculasCompletas = async () => {
-  return await model.findAllComplete();
+  // Usar método alternativo que no depende de funciones almacenadas
+  return await model.findAllCompleteAlternative();
 };
 
 export const getPeliculaById = async (id) => {
@@ -13,7 +14,8 @@ export const getPeliculaById = async (id) => {
 };
 
 export const getPeliculaByIdComplete = async (id) => {
-  return await model.findByIdComplete(id);
+  // Usar método alternativo que no depende de funciones almacenadas
+  return await model.findByIdCompleteAlternative(id);
 };
 
 export const createPelicula = async (data) => {
