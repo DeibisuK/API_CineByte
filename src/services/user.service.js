@@ -1,4 +1,3 @@
-
 import admin from '../config/firebase.js'
 
 export const asignarRolAdmin = async (uid) => {
@@ -12,5 +11,15 @@ export const removerRolAdmin = async (uid) => {
   //await admin.auth().setCustomUserClaims(uid, { role: 'cliente' });
 
   // Si quieres eliminar el claim role completamente:
+  await admin.auth().setCustomUserClaims(uid, {});
+};
+
+// Nuevas funciones para el rol empleado
+export const asignarRolEmpleado = async (uid) => {
+  await admin.auth().setCustomUserClaims(uid, { role: 'empleado' });
+};
+
+export const removerRolEmpleado = async (uid) => {
+  // Remover el rol empleado (volver a usuario normal)
   await admin.auth().setCustomUserClaims(uid, {});
 };

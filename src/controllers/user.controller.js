@@ -93,6 +93,27 @@ export const removerAdmin = async (req, res) => {
   }
 };
 
+// Nuevas funciones para el rol empleado
+export const asignarEmpleado = async (req, res) => {
+  try {
+    const { uid } = req.body;
+    await userService.asignarRolEmpleado(uid);
+    res.json({ message: 'Rol empleado asignado correctamente' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const removerEmpleado = async (req, res) => {
+  try {
+    const { uid } = req.body;
+    await userService.removerRolEmpleado(uid);
+    res.json({ message: 'Rol empleado removido correctamente' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export const editarUsuario = async (req, res) => {
   const { uid } = req.params;
   const { username, email, password } = req.body;
