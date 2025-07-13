@@ -4,11 +4,13 @@ export const findAll = async () => {
     const result = await db.query('SELECT * FROM peliculas');
     return result.rows;
 };
+
 export const findAllComplete = async () => {
     const query = 'SELECT * FROM obtener_todas_las_peliculas_completas();';
     const result = await db.query(query);
     return result.rows[0].obtener_todas_las_peliculas_completas;
 };
+
 export const findAllActores = async (id) => {
     const result = await db.query('SELECT id_actor FROM pelicula_actores WHERE id_pelicula = $1', [id]);
     const soloActores = result.rows.map(item => item.id_actor);
@@ -122,6 +124,11 @@ export const update = async (id, {
 
 export const remove = async (id) => {
     await db.query('DELETE FROM peliculas WHERE id_pelicula = $1', [id]);
+}
+
+export const getAnioFromPeliculas = async () => {
+    const result = await db.query('SELECT DISTINCT EXTRACT(YEAR FROM fecha_estreno)::int AS anio FROM peliculas ORDER BY anio DESC;');
+    return result.rows.map(row => row.anio);
 }
 
 // Métodos alternativos que no dependen de funciones almacenadas

@@ -97,6 +97,9 @@ const obtenerNombreMes = (numeroMes) => {
     return meses[numeroMes - 1] || 'Mes inválido';
 };
 
+
+
+
 // === CONSULTAS ESPECÍFICAS ===
 
 // Obtener ventas del período

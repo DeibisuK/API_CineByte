@@ -45,3 +45,7 @@ export const getAllEtiquetasByPeliculaId = async (id) => {
 export const getAllIdiomasByPeliculaId = async (id) => {
   return await model.findAllIdiomas(id);
 };
+
+export const getAnioFromPeliculas = async () => {
+  return await model.getAnioFromPeliculas();
+}
