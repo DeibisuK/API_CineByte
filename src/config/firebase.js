@@ -1,20 +1,16 @@
 import admin from 'firebase-admin';
-import { readFileSync } from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
-// Para __dirname en ES Modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const base64 = process.env.FIREBASE_CREDENTIALS_BASE64;
 
-// Ruta absoluta al JSON
-const serviceAccountPath = path.join(__dirname, '../../cinebyte-f2b52-firebase-adminsdk-fbsvc-c93acb955a.json');
+if (!base64) {
+  throw new Error('FIREBASE_CREDENTIALS_BASE64 no está definida');
+}
 
-// Leer y parsear el archivo manualmente
-const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf-8'));
+const jsonString = Buffer.from(base64, 'base64').toString('utf-8');
+const serviceAccount = JSON.parse(jsonString);
 
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
+  credential: admin.credential.cert(serviceAccount),
 });
 
 export default admin;
