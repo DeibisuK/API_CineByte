@@ -82,3 +82,28 @@ export const getByPeliculaId = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+export const updateEstadoFuncion = async (req, res) => {
+    const id = parseInt(req.params.id);
+    const { nuevoEstado } = req.body;
+
+    if (isNaN(id) || !nuevoEstado) {
+        return res.status(400).json({ error: 'ID o estado inválido' });
+    }
+
+    try {
+        const actualizado = await service.changeFuncionEstado(id, nuevoEstado);
+        
+        if (!actualizado) {
+            return res.status(404).json({ error: 'Función no encontrada' });
+        }
+
+        res.status(200).json({
+            mensaje: 'Estado de la función actualizado correctamente',
+            funcion: actualizado,
+        });
+    } catch (err) {
+        console.error('Error al actualizar estado de función:', err);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+}

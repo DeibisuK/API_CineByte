@@ -23,4 +23,7 @@ export const deleteFuncion = async (id) => {
 export const getFuncionesByPeliculaId = async (id) => {
     return await model.findFuncionesByPeliculaId(id);
 };
+export const changeFuncionEstado = async (id, estado) => {
+    return await model.updateEstadoFuncion(id, estado);
+};
 

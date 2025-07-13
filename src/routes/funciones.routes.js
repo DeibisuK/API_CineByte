@@ -8,5 +8,6 @@ router.get('/:id', controller.getById);
 router.post('/', controller.create);
 router.put('/:id', controller.update);
 router.delete('/:id', controller.remove);
+router.put('/:id/estado', controller.updateEstadoFuncion); // Nueva ruta para actualizar el estado de una función
 
 export default router;

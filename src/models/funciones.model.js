@@ -11,14 +11,13 @@ export const findById = async (id) => {
 };
 
 export const insert = async ({ id_pelicula, id_sala, fecha_hora_inicio, precio_funcion, id_idioma, trailer_url, estado, fecha_hora_fin }) => {
+    const fecha_local = new Date(fecha_hora_inicio);
+    const fecha_inicio_str = fecha_local.toLocaleString('sv-SE').replace('T', ' '); // Formato seguro: 'YYYY-MM-DD HH:mm:ss'
+    const fecha_fin_local = new Date(fecha_hora_fin);
+    const fecha_fin_str = fecha_fin_local.toLocaleString('sv-SE').replace('T', ' '); // Formato seguro: 'YYYY-MM-DD HH:mm:ss'
 
-    /*
-    INSERT INTO public.funciones(
-	id_funcion, id_pelicula, id_sala, fecha_hora_inicio, precio_funcion, id_idioma, trailer_url, estado, fecha_hora_fin)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
-    */
     const result = await db.query('INSERT INTO funciones (id_pelicula, id_sala, fecha_hora_inicio, precio_funcion, id_idioma, trailer_url, estado, fecha_hora_fin) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *'
-        , [id_pelicula, id_sala, fecha_hora_inicio, precio_funcion, id_idioma, trailer_url, estado, fecha_hora_fin]);
+        , [id_pelicula, id_sala, fecha_inicio_str, precio_funcion, id_idioma, trailer_url, estado, fecha_fin_str]);
     return result.rows[0];
 };
 
@@ -48,4 +47,12 @@ export const findFuncionesByPeliculaId = async (id) => {
         funciones = JSON.parse(funciones);
     }
     return funciones;
+};
+
+export const updateEstadoFuncion = async (id, estado) => {
+    const result = await db.query(
+        'UPDATE funciones SET estado = $1 WHERE id_funcion = $2 RETURNING *',
+        [estado, id]
+    );
+    return result.rows[0];
 };

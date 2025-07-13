@@ -16,6 +16,7 @@
     "exceljs": "^4.4.0",
     "express": "^5.1.0",
     "firebase-admin": "^13.4.0",
+    "luxon": "^3.7.1",
     "morgan": "^1.10.0",
     "nodemailer": "^7.0.3",
     "pdfkit": "^0.17.1",
