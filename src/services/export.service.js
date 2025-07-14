@@ -865,10 +865,12 @@ export const getAvailableReports = async () => {
     };
 };
 
-// Función específica para generar PDF de factura de venta
 export const generarFacturaPDF = async (ventaId, firebase_uid) => {
     try {
-        console.log('🧾 Generando factura PDF para venta:', ventaId);
+        // === VALIDACIÓN DE PARÁMETROS ===
+        if (!ventaId || !firebase_uid) {
+            throw new Error('ID de venta y UID de Firebase son requeridos');
+        }
         
         // === OBTENER DATOS DEL USUARIO DE FIREBASE ===
         let datosUsuario = {
@@ -882,9 +884,8 @@ export const generarFacturaPDF = async (ventaId, firebase_uid) => {
                 nombre: usuarioFirebase.displayName || usuarioFirebase.email?.split('@')[0] || 'Cliente',
                 email: usuarioFirebase.email || 'N/A'
             };
-            console.log('👤 Datos del usuario obtenidos:', datosUsuario);
         } catch (error) {
-            console.warn('⚠️ Error obteniendo datos de Firebase, usando valores por defecto:', error.message);
+            console.warn('Error obteniendo datos de Firebase, usando valores por defecto:', error.message);
         }
         
         // Obtener datos completos de la venta con JOIN mejorado
@@ -981,32 +982,38 @@ export const generarFacturaPDF = async (ventaId, firebase_uid) => {
             idioma: ventaData.idioma_real || ventaData.idioma || 'N/A'
         };
         
+        // === PROCESAR ASIENTOS SIN DUPLICADOS ===
         const asientos = result.rows
             .filter(row => row.numero_asiento)
-            .map(row => ({
-                numero_asiento: row.numero_asiento,
-                precio_unitario: row.precio_unitario
-            }));
+            .reduce((acc, row) => {
+                const existe = acc.find(a => a.numero_asiento === row.numero_asiento);
+                if (!existe) {
+                    acc.push({
+                        numero_asiento: row.numero_asiento,
+                        precio_unitario: parseFloat(row.precio_unitario) || 0
+                    });
+                }
+                return acc;
+            }, []);
         
+        // === PROCESAR DETALLES SIN DUPLICADOS ===
         const detalles = result.rows
             .filter(row => row.detalle_descripcion)
-            .map(row => ({
-                descripcion: row.detalle_descripcion,
-                cantidad: row.detalle_cantidad,
-                precio_unitario: row.detalle_precio_unitario,
-                subtotal: row.detalle_subtotal
-            }));
-        
-        console.log('📊 Datos de factura obtenidos:', {
-            venta: ventaData.id_venta,
-            factura: ventaData.numero_factura,
-            cliente: ventaData.cliente_nombre,
-            email: ventaData.cliente_email,
-            pelicula: ventaData.pelicula_titulo,
-            sala: ventaData.sala_nombre,
-            asientos: asientos.length,
-            detalles: detalles.length
-        });
+            .reduce((acc, row) => {
+                const existe = acc.find(d => 
+                    d.descripcion === row.detalle_descripcion && 
+                    d.precio_unitario === row.detalle_precio_unitario
+                );
+                if (!existe) {
+                    acc.push({
+                        descripcion: row.detalle_descripcion,
+                        cantidad: parseInt(row.detalle_cantidad) || 1,
+                        precio_unitario: parseFloat(row.detalle_precio_unitario) || 0,
+                        subtotal: parseFloat(row.detalle_subtotal) || 0
+                    });
+                }
+                return acc;
+            }, []);
         
         // === ENVIAR CORREO DE CONFIRMACIÓN ===
         try {
@@ -1023,14 +1030,13 @@ export const generarFacturaPDF = async (ventaId, firebase_uid) => {
                     total: ventaData.total || ventaData.factura_total || 0,
                     numeroFactura: ventaData.numero_factura || ventaData.id_venta
                 });
-                console.log('📧 Correo de confirmación enviado exitosamente');
             }
         } catch (emailError) {
-            console.warn('⚠️ Error enviando correo de confirmación:', emailError.message);
+            console.warn('Error enviando correo de confirmación:', emailError.message);
             // No lanzar error, continuar con la generación del PDF
         }
         
-        // Generar PDF
+        // === GENERAR PDF CON CONFIGURACIÓN OPTIMIZADA ===
         const pdfBuffer = await generarFacturaPDFBuffer({
             venta: ventaData,
             asientos,
@@ -1050,30 +1056,33 @@ export const generarFacturaPDF = async (ventaId, firebase_uid) => {
     }
 };
 
-// Función para generar el buffer del PDF de factura
+// Función para generar el buffer del PDF de factura - OPTIMIZADA PARA EVITAR PÁGINAS EN BLANCO
 const generarFacturaPDFBuffer = async (data) => {
     return new Promise(async (resolve, reject) => {
         try {
             // === CARGAR LOGO ===
             const logoBuffer = await cargarLogoSVG();
             
+            // === CONFIGURACIÓN CRÍTICA PARA EVITAR PÁGINAS EN BLANCO ===
             const doc = new PDFDocument({ 
                 margin: 40,
                 size: 'A4',
                 layout: 'portrait',
-                bufferPages: false,
-                autoFirstPage: true,
-                compress: false
+                bufferPages: false,      // CRÍTICO: No usar buffer de páginas
+                autoFirstPage: true,     // Solo crear primera página
+                compress: false          // Evitar compresión que puede generar páginas extra
             });
+            
             const chunks = [];
             
-            doc.on('data', chunks.push.bind(chunks));
+            // === EVENTOS OPTIMIZADOS ===
+            doc.on('data', chunk => chunks.push(chunk));
             doc.on('end', () => {
-                const pdfBuffer = Buffer.concat(chunks);
-                resolve(pdfBuffer);
+                resolve(Buffer.concat(chunks));
             });
+            doc.on('error', reject);
             
-            // === PALETA DE COLORES IGUAL A LAS OTRAS EXPORTACIONES ===
+            // === PALETA DE COLORES ===
             const colors = {
                 headerDark: '#121212',
                 headerAccent: '#ffc800',
@@ -1082,9 +1091,7 @@ const generarFacturaPDFBuffer = async (data) => {
                 accent: '#ffc800',
                 cardBg: '#e7e7e7',
                 tableBg: '#FFFFFF',
-                altRow: '#f1f1f1',
-                border: '#ff0000',
-                divider: '#ffc800'
+                altRow: '#f1f1f1'
             };
 
             // === HELPER PARA RECTÁNGULOS REDONDEADOS ===
@@ -1096,128 +1103,93 @@ const generarFacturaPDFBuffer = async (data) => {
             const pageWidth = doc.page.width;
             const pageHeight = doc.page.height;
             
+            // === CALCULAR EL CONTENIDO TOTAL ANTES DE EMPEZAR ===
+            const headerHeight = 120;
+            const infoSectionHeight = 160;
+            const funcionHeight = 110;
+            const tableHeaderHeight = 25;
+            const itemsCount = Math.max(data.detalles?.length || 0, data.asientos?.length || 0, 1);
+            const itemsHeight = itemsCount * 25;
+            const totalesHeight = 80;
+            const footerHeight = 80;
+            
+            const totalContentHeight = headerHeight + infoSectionHeight + funcionHeight + 
+                                     tableHeaderHeight + itemsHeight + totalesHeight + footerHeight;
+            
             // Color del fondo del documento
-            doc.rect(0, 0, doc.page.width, doc.page.height)
-               .fill('#F8F9FA');
+            doc.rect(0, 0, pageWidth, pageHeight).fill('#F8F9FA');
 
-            // === HEADER PROFESIONAL ESTILO IGUAL A OTRAS EXPORTACIONES CON LOGO ===
-            // Fondo del header con degradado simulado
-            roundedRect(0, 0, pageWidth, 120, 0)
-                .fill(colors.headerDark);
+            // === HEADER PROFESIONAL ===
+            roundedRect(0, 0, pageWidth, 120, 0).fill(colors.headerDark);
+            roundedRect(0, 90, pageWidth, 8, 0).fill(colors.headerAccent);
             
-            // Banda naranja de acento
-            roundedRect(0, 90, pageWidth, 8, 0)
-                .fill(colors.headerAccent);
-            
-            // === LOGO Y TÍTULO PRINCIPAL ===
+            // === LOGO Y TÍTULO ===
             if (logoBuffer) {
-                // Agregar logo
                 doc.image(logoBuffer, 50, 15, { width: 30, height: 30 });
-                // Título al lado del logo
-                doc.fillColor('#FFFFFF')
-                   .fontSize(28)
-                   .font('Helvetica-Bold')
-                   .text('CineByte', 110, 25);
+                doc.fillColor('#FFFFFF').fontSize(28).font('Helvetica-Bold').text('CineByte', 110, 25);
             } else {
-                // Sin logo, solo título
-                doc.fillColor('#FFFFFF')
-                   .fontSize(28)
-                   .font('Helvetica-Bold')
-                   .text('CineByte', 50, 25);
+                doc.fillColor('#FFFFFF').fontSize(28).font('Helvetica-Bold').text('CineByte', 50, 25);
             }
                
-            doc.fontSize(12)
-               .font('Helvetica')
-               .fillColor('#E2E8F0')
+            doc.fontSize(12).font('Helvetica').fillColor('#E2E8F0')
                .text('Sistema de Gestión Cinematográfica', logoBuffer ? 110 : 50, 60);
 
             // Info de documento en la esquina derecha
             const infoBoxX = pageWidth - 200;
-            roundedRect(infoBoxX, 25, 170, 50, 3)
-                .fill('#FFFFFF');
+            roundedRect(infoBoxX, 25, 170, 50, 3).fill('#FFFFFF');
                 
-            doc.fillColor(colors.primary)
-               .fontSize(10)
-               .font('Helvetica-Bold')
+            doc.fillColor(colors.primary).fontSize(10).font('Helvetica-Bold')
                .text('FACTURA GENERADA', infoBoxX + 15, 35)
-               .fontSize(9)
-               .font('Helvetica')
+               .fontSize(9).font('Helvetica')
                .text(`Fecha: ${new Date().toLocaleDateString('es-ES')}`, infoBoxX + 15, 50)
                .text(`Hora: ${new Date().toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'})}`, infoBoxX + 15, 62);
 
             let currentY = 140;
 
-            // === INFORMACIÓN DEL REPORTE (ESTILO IGUAL A OTRAS EXPORTACIONES) ===
-            // Contenedor principal del reporte
-            roundedRect(40, currentY, pageWidth - 80, 70, 5)
-                .fill(colors.cardBg);
+            // === INFORMACIÓN DEL REPORTE ===
+            roundedRect(40, currentY, pageWidth - 80, 70, 5).fill(colors.cardBg);
+            roundedRect(45, currentY + 5, 6, 60, 2).fill(colors.accent);
                 
-            // Banda lateral de color
-            roundedRect(45, currentY + 5, 6, 60, 2)
-                .fill(colors.accent);
-                
-            doc.fillColor(colors.primary)
-               .fontSize(18)
-               .font('Helvetica-Bold')
+            doc.fillColor(colors.primary).fontSize(18).font('Helvetica-Bold')
                .text('FACTURA DE COMPRA', 65, currentY + 15);
                
-            doc.fontSize(14)
-               .font('Helvetica')
-               .fillColor(colors.secondary)
+            doc.fontSize(14).font('Helvetica').fillColor(colors.secondary)
                .text(`Número: ${data.venta.numero_factura || data.venta.id_venta}`, 65, currentY + 40);
 
             currentY += 90;
 
-            // === INFORMACIÓN DE LA EMPRESA CORREGIDA ===
-            roundedRect(40, currentY, (pageWidth - 80) / 2 - 10, 80, 5)
-                .fill(colors.tableBg);
+            // === INFORMACIÓN EMPRESA Y CLIENTE ===
+            roundedRect(40, currentY, (pageWidth - 80) / 2 - 10, 80, 5).fill(colors.tableBg);
                 
-            doc.fillColor(colors.primary)
-               .fontSize(12)
-               .font('Helvetica-Bold')
+            doc.fillColor(colors.primary).fontSize(12).font('Helvetica-Bold')
                .text('INFORMACIÓN DE LA EMPRESA', 50, currentY + 10);
             
-            doc.font('Helvetica')
-               .fontSize(10)
+            doc.font('Helvetica').fontSize(10)
                .text('CineByte S.A.S', 50, currentY + 30)
                .text('contacto@cinebyte.com', 50, currentY + 45)
                .text('Tel: (+593) 96 812 2692', 50, currentY + 60);
 
-            // === INFORMACIÓN DEL CLIENTE CORREGIDA ===
             const clienteX = 40 + (pageWidth - 80) / 2 + 10;
-            roundedRect(clienteX, currentY, (pageWidth - 80) / 2 - 10, 80, 5)
-                .fill(colors.tableBg);
+            roundedRect(clienteX, currentY, (pageWidth - 80) / 2 - 10, 80, 5).fill(colors.tableBg);
                 
-            doc.fillColor(colors.primary)
-               .fontSize(12)
-               .font('Helvetica-Bold')
+            doc.fillColor(colors.primary).fontSize(12).font('Helvetica-Bold')
                .text('INFORMACIÓN DEL CLIENTE', clienteX + 10, currentY + 10);
             
-            doc.font('Helvetica')
-               .fontSize(10)
+            doc.font('Helvetica').fontSize(10)
                .text(`Nombre: ${data.venta.cliente_nombre || 'Cliente'}`, clienteX + 10, currentY + 30)
                .text(`Email: ${data.venta.cliente_email || 'N/A'}`, clienteX + 10, currentY + 45)
                .text(`Teléfono: ${data.venta.cliente_telefono || 'N/A'}`, clienteX + 10, currentY + 60);
 
             currentY += 100;
-            
-            currentY += 100;
 
-            // === INFORMACIÓN DE LA FUNCIÓN CORREGIDA ===
-            roundedRect(40, currentY, pageWidth - 80, 90, 5)
-                .fill(colors.cardBg);
+            // === INFORMACIÓN DE LA FUNCIÓN ===
+            roundedRect(40, currentY, pageWidth - 80, 90, 5).fill(colors.cardBg);
+            roundedRect(45, currentY + 5, 6, 80, 2).fill(colors.accent);
                 
-            // Banda lateral de color
-            roundedRect(45, currentY + 5, 6, 80, 2)
-                .fill(colors.accent);
-                
-            doc.fillColor(colors.primary)
-               .fontSize(14)
-               .font('Helvetica-Bold')
+            doc.fillColor(colors.primary).fontSize(14).font('Helvetica-Bold')
                .text('DETALLES DE LA FUNCIÓN', 65, currentY + 15);
             
-            doc.font('Helvetica')
-               .fontSize(10)
+            doc.font('Helvetica').fontSize(10)
                .text(`Película: ${data.venta.pelicula_titulo || 'N/A'}`, 65, currentY + 40)
                .text(`Sala: ${data.venta.sala_nombre || 'N/A'}`, 65, currentY + 55)
                .text(`Fecha: ${data.venta.fecha_funcion ? new Date(data.venta.fecha_funcion).toLocaleDateString('es-ES') : 'N/A'}`, 65, currentY + 70)
@@ -1226,20 +1198,25 @@ const generarFacturaPDFBuffer = async (data) => {
                .text(`Asientos: ${data.asientos.map(a => a.numero_asiento).join(', ') || 'N/A'}`, 350, currentY + 70);
 
             currentY += 110;
-            
-            currentY += 110;
 
-            // === TABLA DE DETALLES ESTILO IGUAL A OTRAS EXPORTACIONES ===
+            // === VERIFICAR SI NECESITAMOS NUEVA PÁGINA ANTES DE LA TABLA ===
+            const remainingHeight = pageHeight - currentY - 100; // Margen para footer
+            const requiredTableHeight = 25 + (itemsCount * 25) + 100; // Header + items + totales
+            
+            if (requiredTableHeight > remainingHeight) {
+                doc.addPage();
+                doc.rect(0, 0, pageWidth, pageHeight).fill('#F8F9FA');
+                currentY = 50;
+            }
+
+            // === TABLA DE DETALLES ===
             const tableWidth = pageWidth - 80;
             const rowHeight = 25;
             
-            // === ENCABEZADOS DE TABLA ===
-            roundedRect(40, currentY, tableWidth, rowHeight, 4)
-                .fill(colors.headerDark);
+            // Encabezados de tabla
+            roundedRect(40, currentY, tableWidth, rowHeight, 4).fill(colors.headerDark);
             
-            doc.fillColor('#FFFFFF')
-               .fontSize(9)
-               .font('Helvetica-Bold')
+            doc.fillColor('#FFFFFF').fontSize(9).font('Helvetica-Bold')
                .text('DESCRIPCIÓN', 50, currentY + 10)
                .text('CANT.', 280, currentY + 10)
                .text('PRECIO UNIT.', 350, currentY + 10)
@@ -1247,19 +1224,15 @@ const generarFacturaPDFBuffer = async (data) => {
             
             currentY += rowHeight;
             
-            // === FILAS DE DATOS ===
+            // Filas de datos
             let rowIndex = 0;
             
-            // Agregar detalles de la factura
             if (data.detalles && data.detalles.length > 0) {
                 data.detalles.forEach((detalle) => {
                     const bgColor = rowIndex % 2 === 0 ? colors.tableBg : colors.altRow;
-                    roundedRect(40, currentY, tableWidth, rowHeight, 2)
-                        .fill(bgColor);
+                    roundedRect(40, currentY, tableWidth, rowHeight, 2).fill(bgColor);
                     
-                    doc.fillColor(colors.primary)
-                       .font('Helvetica')
-                       .fontSize(9)
+                    doc.fillColor(colors.primary).font('Helvetica').fontSize(9)
                        .text(detalle.descripcion, 50, currentY + 9)
                        .text(detalle.cantidad.toString(), 280, currentY + 9)
                        .text(`$${detalle.precio_unitario.toLocaleString()}`, 350, currentY + 9)
@@ -1268,15 +1241,11 @@ const generarFacturaPDFBuffer = async (data) => {
                     rowIndex++;
                 });
             } else {
-                // Si no hay detalles, mostrar asientos
                 data.asientos.forEach((asiento) => {
                     const bgColor = rowIndex % 2 === 0 ? colors.tableBg : colors.altRow;
-                    roundedRect(40, currentY, tableWidth, rowHeight, 2)
-                        .fill(bgColor);
+                    roundedRect(40, currentY, tableWidth, rowHeight, 2).fill(bgColor);
                     
-                    doc.fillColor(colors.primary)
-                       .font('Helvetica')
-                       .fontSize(9)
+                    doc.fillColor(colors.primary).font('Helvetica').fontSize(9)
                        .text(`Asiento ${asiento.numero_asiento}`, 50, currentY + 9)
                        .text('1', 280, currentY + 9)
                        .text(`$${asiento.precio_unitario.toLocaleString()}`, 350, currentY + 9)
@@ -1286,55 +1255,43 @@ const generarFacturaPDFBuffer = async (data) => {
                 });
             }
             
-            // === TOTALES ESTILO IGUAL A OTRAS EXPORTACIONES ===
+            // === TOTALES ===
             currentY += 20;
             
-            // Caja de totales destacada
-            roundedRect(pageWidth - 220, currentY, 180, 80, 5)
-                .fill(colors.cardBg);
+            roundedRect(pageWidth - 220, currentY, 180, 80, 5).fill(colors.cardBg);
                 
-            doc.fillColor(colors.primary)
-               .font('Helvetica')
-               .fontSize(10)
+            doc.fillColor(colors.primary).font('Helvetica').fontSize(10)
                .text(`Subtotal:`, pageWidth - 210, currentY + 15)
                .text(`$${(data.venta.subtotal || data.venta.factura_subtotal || 0).toLocaleString()}`, pageWidth - 120, currentY + 15)
                .text(`IVA (19%):`, pageWidth - 210, currentY + 35)
                .text(`$${(data.venta.iva || data.venta.iva_valor || 0).toLocaleString()}`, pageWidth - 120, currentY + 35);
             
-            doc.font('Helvetica-Bold')
-               .fontSize(12)
-               .fillColor(colors.accent)
+            doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.accent)
                .text(`TOTAL:`, pageWidth - 210, currentY + 55)
                .text(`$${(data.venta.total || data.venta.factura_total || 0).toLocaleString()}`, pageWidth - 120, currentY + 55);
             
             currentY += 100;
 
-            // === FOOTER PROFESIONAL IGUAL A OTRAS EXPORTACIONES ===
+            // === FOOTER SOLO SI HAY ESPACIO ===
             const footerY = pageHeight - 80;
             
             if (currentY <= footerY - 20) {
-                // Línea divisoria elegante
-                doc.strokeColor(colors.accent)
-                   .lineWidth(2)
-                   .moveTo(40, footerY)
-                   .lineTo(pageWidth - 40, footerY)
-                   .stroke();
+                doc.strokeColor(colors.accent).lineWidth(2)
+                   .moveTo(40, footerY).lineTo(pageWidth - 40, footerY).stroke();
                 
-                // Información de la empresa
-                doc.fillColor(colors.secondary)
-                   .fontSize(8)
-                   .font('Helvetica')
+                doc.fillColor(colors.secondary).fontSize(8).font('Helvetica')
                    .text('CineByte - Sistema de Gestión Cinematográfica', 40, footerY + 15)
                    .text('Esta factura fue generada digitalmente y es de simulación por el proyecto.', 40, footerY + 30)
-                   .text(`Generado el ${new Date().toLocaleString('es-ES')}`, 40, footerY + 45);
+                   .text(`Generado el ${new Date().toLocaleString('es-ES')}`, 40, footerY + 31);
                 
-                // Contacto en la derecha
                 doc.text('contacto@cinebyte.com | (+593) 96 812 2692', pageWidth - 250, footerY + 15);
             }
 
+            // === FINALIZAR DOCUMENTO SIN PÁGINAS EXTRA ===
             doc.end();
             
         } catch (error) {
+            console.error('Error generando PDF:', error);
             reject(error);
         }
     });
@@ -1349,7 +1306,7 @@ const cargarLogoSVG = async () => {
         return new Promise((resolve, reject) => {
             svg2img(svgData, { width: 40, height: 40 }, (error, buffer) => {
                 if (error) {
-                    console.warn('⚠️ Error convirtiendo SVG a imagen:', error);
+                    console.warn('Error convirtiendo SVG a imagen:', error);
                     resolve(null);
                 } else {
                     resolve(buffer);
@@ -1357,36 +1314,8 @@ const cargarLogoSVG = async () => {
             });
         });
     } catch (error) {
-        console.warn('⚠️ Error cargando logo SVG:', error.message);
+        console.warn('Error cargando logo SVG:', error.message);
         return null;
     }
 };
 
-// Función para generar y posicionar logo en PDFs
-const posicionarLogoEnPDF = (doc, logoBuffer, colors) => {
-    if (logoBuffer) {
-        // Agregar logo más pequeño
-        doc.image(logoBuffer, 50, 20, { width: 30, height: 30 });
-        // Título al lado del logo
-        doc.fillColor('#FFFFFF')
-           .fontSize(28)
-           .font('Helvetica-Bold')
-           .text('CineByte', 90, 25);
-        
-        doc.fontSize(12)
-           .font('Helvetica')
-           .fillColor('#E2E8F0')
-           .text('Sistema de Gestión Cinematográfica', 90, 60);
-    } else {
-        // Sin logo, solo título
-        doc.fillColor('#FFFFFF')
-           .fontSize(28)
-           .font('Helvetica-Bold')
-           .text('CineByte', 50, 25);
-           
-        doc.fontSize(12)
-           .font('Helvetica')
-           .fillColor('#E2E8F0')
-           .text('Sistema de Gestión Cinematográfica', 50, 60);
-    }
-};
