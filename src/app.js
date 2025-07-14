@@ -21,6 +21,7 @@ import funcionesRoutes from './routes/funciones.routes.js';
 import exportRoutes from './routes/export.routes.js';
 import ventaRoutes from './routes/venta.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
+import tokenValidationRoutes from './routes/token-validation.routes.js';
 
 
 dotenv.config();
@@ -50,6 +51,7 @@ app.use('/api/funciones', funcionesRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/ventas', ventaRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/auth', tokenValidationRoutes);
 
 
 export default app;

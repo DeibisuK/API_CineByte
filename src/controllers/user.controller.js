@@ -1,38 +1,15 @@
 import * as userService from '../services/user.service.js';
 import admin from '../config/firebase.js';
 
-export const crearUsuarioAdmin = async (req, res) => {
+export const eliminarUsuario = async (req, res) => {
+  const { id } = req.params;
   try {
-    const { email, password, displayName } = req.body;
+    await admin.auth().deleteUser(id);
 
-    // 1. Crear usuario
-    const user = await admin.auth().createUser({
-      email,
-      password,
-      displayName
-    });
-
-    // 2. Asignar custom claim admin
-    await admin.auth().setCustomUserClaims(user.uid, { role: 'admin' });
-
-    res.status(201).json({
-      message: 'Usuario admin creado correctamente',
-      uid: user.uid,
-      email: user.email
-    });
+    res.json({ message: `Usuario ${id} eliminado correctamente` });
   } catch (error) {
-    console.error('Error al crear usuario admin:', error);
-    res.status(500).json({ error: 'No se pudo crear el usuario admin' });
-  }
-};
-
-export const asignarAdmin = async (req, res) => {
-  try {
-    const { uid } = req.body;
-    await userService.asignarRolAdmin(uid);
-    res.json({ message: 'Rol admin asignado correctamente' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(error);
+    res.status(500).json({ error: 'Error eliminando usuario' });
   }
 };
 
@@ -69,25 +46,48 @@ export async function listarUsuarios(req, res) {
     console.error('Error al listar usuarios:', error);
     res.status(500).json({ error: 'No se pudo listar los usuarios' });
   }
-}
+};
 
-export const eliminarUsuario = async (req, res) => {
-  const { id } = req.params;
+export const crearUsuarioAdmin = async (req, res) => {
   try {
-    await admin.auth().deleteUser(id);
+    const { email, password, displayName } = req.body;
 
-    res.json({ message: `Usuario ${id} eliminado correctamente` });
+    // 1. Crear usuario
+    const user = await admin.auth().createUser({
+      email,
+      password,
+      displayName
+    });
+
+    // 2. Asignar custom claims admin usando el servicio
+    await userService.asignarRolAdmin(user.uid);
+
+    res.status(201).json({
+      message: 'Usuario admin creado correctamente',
+      uid: user.uid,
+      email: user.email
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error eliminando usuario' });
+    console.error('Error al crear usuario admin:', error);
+    res.status(500).json({ error: 'No se pudo crear el usuario admin' });
+  }
+};
+
+export const asignarAdmin = async (req, res) => {
+  try {
+    const { uid } = req.body;
+    const result = await userService.asignarRolAdmin(uid);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
 
 export const removerAdmin = async (req, res) => {
   try {
     const { uid } = req.body;
-    await userService.removerRolAdmin(uid); // método en tu servicio que quite o actualice el rol
-    res.json({ message: 'Rol admin removido correctamente' });
+    const result = await userService.removerRolAdmin(uid);
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -97,8 +97,8 @@ export const removerAdmin = async (req, res) => {
 export const asignarEmpleado = async (req, res) => {
   try {
     const { uid } = req.body;
-    await userService.asignarRolEmpleado(uid);
-    res.json({ message: 'Rol empleado asignado correctamente' });
+    const result = await userService.asignarRolEmpleado(uid);
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -107,8 +107,8 @@ export const asignarEmpleado = async (req, res) => {
 export const removerEmpleado = async (req, res) => {
   try {
     const { uid } = req.body;
-    await userService.removerRolEmpleado(uid);
-    res.json({ message: 'Rol empleado removido correctamente' });
+    const result = await userService.removerRolEmpleado(uid);
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -129,6 +129,59 @@ export const editarUsuario = async (req, res) => {
     res.json({ message: 'Usuario actualizado correctamente' });
   } catch (error) {
     console.error('Error al editar usuario:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Nuevas funciones adicionales
+export const obtenerUsuario = async (req, res) => {
+  try {
+    const { uid } = req.params;
+    const userInfo = await userService.obtenerUsuarioConClaims(uid);
+    res.json(userInfo);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const revocarTokens = async (req, res) => {
+  try {
+    const { uid } = req.params;
+    const result = await userService.revocarTokensUsuario(uid);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const cambiarEstadoUsuario = async (req, res) => {
+  try {
+    const { uid } = req.params;
+    const { disabled } = req.body;
+    const result = await userService.cambiarEstadoUsuario(uid, disabled);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const generarCustomToken = async (req, res) => {
+  try {
+    const { uid } = req.params;
+    const { additionalClaims } = req.body;
+    const customToken = await userService.crearCustomToken(uid, additionalClaims);
+    res.json({ customToken });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const obtenerUsuarioActual = async (req, res) => {
+  try {
+    // req.user se establece en el middleware de autenticación
+    const userInfo = await userService.obtenerUsuarioConClaims(req.user.uid);
+    res.json(userInfo);
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
