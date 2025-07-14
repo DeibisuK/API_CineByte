@@ -1,4 +1,4 @@
-import { admin } from '../config/firebase.js';
+import  admin  from '../config/firebase.js';
 
 /**
  * Validar si el token del usuario es válido
