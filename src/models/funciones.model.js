@@ -11,10 +11,13 @@ export const findById = async (id) => {
 };
 
 export const insert = async ({ id_pelicula, id_sala, fecha_hora_inicio, precio_funcion, id_idioma, trailer_url, estado, fecha_hora_fin }) => {
-    const fecha_local = new Date(fecha_hora_inicio);
-    const fecha_inicio_str = fecha_local.toLocaleString('sv-SE').replace('T', ' '); // Formato seguro: 'YYYY-MM-DD HH:mm:ss'
-    const fecha_fin_local = new Date(fecha_hora_fin);
-    const fecha_fin_str = fecha_fin_local.toLocaleString('sv-SE').replace('T', ' '); // Formato seguro: 'YYYY-MM-DD HH:mm:ss'
+    
+    const fecha_inicio_utc = new Date(fecha_hora_inicio);
+    const fecha_inicio_str = fecha_inicio_utc.toISOString().replace('T', ' ').replace('Z', '').slice(0, 19); 
+    // 'YYYY-MM-DD HH:mm:ss'
+    const fecha_fin_utc = new Date(fecha_hora_fin);
+    const fecha_fin_str = fecha_fin_utc.toISOString().replace('T', ' ').replace('Z', '').slice(0, 19); 
+    // 'YYYY-MM-DD HH:mm:ss'
 
     const result = await db.query('INSERT INTO funciones (id_pelicula, id_sala, fecha_hora_inicio, precio_funcion, id_idioma, trailer_url, estado, fecha_hora_fin) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *'
         , [id_pelicula, id_sala, fecha_inicio_str, precio_funcion, id_idioma, trailer_url, estado, fecha_fin_str]);
