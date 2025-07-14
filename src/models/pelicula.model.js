@@ -209,3 +209,21 @@ export const findByIdCompleteAlternative = async (id) => {
     const result = await db.query(query, [id]);
     return result.rows[0];
 };
+
+export const getPeliculasMasVendidas = async () => {
+    const query = `
+       SELECT 
+        p.titulo as titulo_pelicula,
+        COUNT(va.id_venta_asiento) as total_vendidos
+        FROM peliculas p
+        JOIN funciones f ON p.id_pelicula = f.id_pelicula
+        JOIN venta_asientos va ON f.id_funcion = va.id_funcion
+        JOIN ventas v ON va.id_venta = v.id_venta
+        WHERE v.estado = 'confirmada'
+        GROUP BY p.id_pelicula, p.titulo
+        ORDER BY total_vendidos DESC
+        LIMIT 3;
+    `;
+    const result = await db.query(query);
+    return result.rows;
+};

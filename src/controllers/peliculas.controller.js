@@ -173,3 +173,12 @@ export const getAnioFromPeliculas = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+export const getPeliculasMasVendidas = async (req, res) => {
+  try {
+    const data = await service.getPeliculasMasVendidas();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}

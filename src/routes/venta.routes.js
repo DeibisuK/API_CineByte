@@ -1,5 +1,8 @@
 import express from 'express';
 import ventaController from '../controllers/venta.controller.js';
+import {getVentasPorMesYAnio,
+    getTodosBoletosVendidos,getVentasPorDia
+} from '../controllers/venta.controller.js';
 
 const router = express.Router();
 
@@ -38,5 +41,14 @@ router.get('/:id/qr', ventaController.obtenerQR);
 
 // Reenviar factura por email
 router.post('/:id/reenviar-factura', ventaController.reenviarFactura);
+
+// Obtener ventas por mes y año
+router.get('/ventas-por-mes/:month/:year', getVentasPorMesYAnio);
+
+// Obtener todos los boletos vendidos
+router.get('/boletos-vendidos/:month/:year', getTodosBoletosVendidos);
+
+// Obtener ventas por día
+router.get('/ventas-por-dia/:startDate/:endDate', getVentasPorDia);
 
 export default router;

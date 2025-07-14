@@ -4,6 +4,7 @@ import * as VentaAsientoModel from '../models/venta_asiento.model.js';
 import * as PagoModel from '../models/pago.model.js';
 import * as FacturaModel from '../models/factura.model.js';
 import * as FacturaDetalleModel from '../models/factura_detalle.model.js';
+import { getVentasPorDia } from '../models/venta_asiento.model.js';
 
 class VentaService {
     
@@ -371,5 +372,16 @@ class VentaService {
         }
     }
 }
+export const getVentasByMonthAndYear = async (month, year) => {
+    return await VentaModel.getVentasByMonthAndYear(month, year);
+};
+
+export const getAllBoletosVendidos = async (month, year) => {
+    return await VentaModel.getAllBoletosVendidos(month, year);
+};
+
+export const ObtenerVentasporDia = async (startDate, endDate) => {
+    return await getVentasPorDia(startDate, endDate);
+};
 
 export default new VentaService();

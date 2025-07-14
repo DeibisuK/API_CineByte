@@ -15,7 +15,7 @@ export const create = async (ventaAsientoData) => {
             ventaAsientoData.id_funcion,
             ventaAsientoData.precio_asiento
         ];
-        
+
         const result = await client.query(query, values);
         return result.rows[0];
     } finally {
@@ -40,7 +40,7 @@ export const createMultiple = async (venta_id, asientos, id_funcion) => {
             VALUES ${placeholders.join(', ')}
             RETURNING *
         `;
-        
+
         const result = await client.query(query, values);
         return result.rows;
     } finally {
@@ -97,7 +97,7 @@ export const getAsientosDisponiblesPorFuncion = async (id_sala, id_funcion) => {
     const client = await db.connect();
     try {
         console.log(`🎬 getAsientosDisponiblesPorFuncion: Sala ${id_sala}, Función ${id_funcion}`);
-        
+
         const query = `
             SELECT 
                 a.id_asiento,
@@ -121,22 +121,22 @@ export const getAsientosDisponiblesPorFuncion = async (id_sala, id_funcion) => {
             WHERE a.id_sala = $1
             ORDER BY a.fila, a.columna
         `;
-        
+
         console.log('🗃️ Query SQL:', query);
         console.log('🎯 Parámetros:', [id_sala, id_funcion]);
-        
+
         const result = await client.query(query, [id_sala, id_funcion]);
-        
+
         console.log(`📊 Asientos encontrados: ${result.rows.length}`);
         console.log('🪑 Primeros 3 asientos:', result.rows.slice(0, 3));
-        
+
         // Verificar si hay asientos ocupados
         const ocupados = result.rows.filter(a => a.ocupado === true);
         console.log(`🔴 Asientos ocupados: ${ocupados.length}`);
         if (ocupados.length > 0) {
             console.log('🎯 Asientos ocupados:', ocupados.map(a => `${a.fila}${a.columna}`));
         }
-        
+
         return result.rows;
     } finally {
         client.release();
@@ -148,18 +148,18 @@ export const checkAsientosOcupadosEnFuncion = async (id_funcion, asientos_ids) =
     const client = await db.connect();
     try {
         console.log('🔍 Ejecutando checkAsientosOcupadosEnFuncion:', { id_funcion, asientos_ids });
-        
+
         // Primero verificar si existen registros en venta_asientos
         const countQuery = `SELECT COUNT(*) as total FROM venta_asientos`;
         const countResult = await client.query(countQuery);
         console.log('📊 Total registros en venta_asientos:', countResult.rows[0].total);
-        
+
         // Si no hay registros, los asientos están disponibles
         if (countResult.rows[0].total === '0') {
             console.log('✅ No hay registros en venta_asientos, todos los asientos están disponibles');
             return [];
         }
-        
+
         const query = `
             SELECT va.id_asiento, va.precio_unitario, v.estado as estado_venta
             FROM venta_asientos va
@@ -168,15 +168,15 @@ export const checkAsientosOcupadosEnFuncion = async (id_funcion, asientos_ids) =
             AND va.id_asiento = ANY($2::int[])
             AND v.estado != 'Cancelada'
         `;
-        
+
         console.log('🗃️ Query SQL:', query);
         console.log('🎯 Parámetros:', [id_funcion, asientos_ids]);
-        
+
         const result = await client.query(query, [id_funcion, asientos_ids]);
-        
+
         console.log('📊 Resultado query:', result.rows);
         console.log('📈 Filas encontradas:', result.rowCount);
-        
+
         return result.rows;
     } catch (error) {
         console.error('❌ Error en checkAsientosOcupadosEnFuncion:', error);
@@ -231,20 +231,20 @@ export const verificarEstructuraBD = async () => {
             WHERE table_name = 'venta_asientos' 
             AND column_name = 'id_funcion'
         `;
-        
+
         const columnResult = await client.query(checkColumnQuery);
         console.log('📋 Estructura columna id_funcion:', columnResult.rows);
-        
+
         // Verificar registros en venta_asientos
         const countQuery = `SELECT COUNT(*) as total FROM venta_asientos`;
         const countResult = await client.query(countQuery);
         console.log('📊 Total registros en venta_asientos:', countResult.rows[0]);
-        
+
         // Verificar registros con id_funcion
         const withFuncionQuery = `SELECT COUNT(*) as con_funcion FROM venta_asientos WHERE id_funcion IS NOT NULL`;
         const withFuncionResult = await client.query(withFuncionQuery);
         console.log('🎭 Registros con id_funcion:', withFuncionResult.rows[0]);
-        
+
         return {
             column_exists: columnResult.rowCount > 0,
             total_records: countResult.rows[0].total,
@@ -257,3 +257,23 @@ export const verificarEstructuraBD = async () => {
         client.release();
     }
 };
+
+export const getVentasPorDia = async (startDate, endDate) => {
+    const query = `
+            SELECT 
+                DATE(va.fecha_venta) AS fecha,
+                COUNT(*) AS total_asientos,
+                SUM(va.precio_unitario) AS total_ventas
+            FROM venta_asientos va
+            JOIN ventas v ON va.id_venta = v.id_venta
+            WHERE v.estado != 'pendiente'
+              AND va.fecha_venta BETWEEN $1 AND $2
+            GROUP BY DATE(va.fecha_venta)
+            ORDER BY fecha DESC
+            LIMIT 7;
+        `;
+    const result = await db.query(query, [startDate, endDate]);
+    console.log(`📊 Ventas por día desde ${startDate} hasta ${endDate}:`, result.rows);
+    return result.rows;
+}
+

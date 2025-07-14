@@ -3,6 +3,7 @@ const router = express.Router();
 import * as controller from '../controllers/funciones.controller.js';
 
 router.get('/', controller.getAll);
+router.get('/asientos', controller.getAsientos); // Nueva ruta para obtener asientos
 router.get('/pelicula/:id', controller.getByPeliculaId); // Nueva ruta para obtener funciones por ID de película
 router.get('/:id', controller.getById);
 router.post('/', controller.create);

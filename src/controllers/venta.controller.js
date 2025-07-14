@@ -1,4 +1,7 @@
 import ventaService from '../services/venta.service.js';
+import { getVentasByMonthAndYear,
+    getAllBoletosVendidos,
+    ObtenerVentasporDia } from '../services/venta.service.js';
 
 class VentaController {
     
@@ -342,5 +345,52 @@ class VentaController {
         }
     }
 }
+
+export const getVentasPorMesYAnio = async (req, res) => {
+    try {
+        const { month, year } = req.params;
+        const ventas = await getVentasByMonthAndYear(month, year);
+        res.json({ventas});
+    } catch (error) {
+        console.error('Error al obtener ventas por mes y año:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor',
+            error: error.message
+        });
+    }
+};
+
+export const getTodosBoletosVendidos = async (req, res) => {
+    try {
+        const { month, year } = req.params;
+        const boletosVendidos = await getAllBoletosVendidos(month, year);
+        res.json({boletosVendidos
+        });
+    } catch (error) {
+        console.error('Error al obtener todos los boletos vendidos:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor',
+            error: error.message
+        });
+    }
+};
+
+export const getVentasPorDia = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.params;
+        const ventasPorDia = await ObtenerVentasporDia(startDate, endDate);
+        res.json(ventasPorDia);
+    } catch (error) {
+        console.error('Error al obtener ventas por día:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor',
+            error: error.message
+        });
+    }
+};
+
 
 export default new VentaController();

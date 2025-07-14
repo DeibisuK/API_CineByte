@@ -130,3 +130,18 @@ export const getEstadisticasByUser = async (firebase_uid, fecha_inicio, fecha_fi
         client.release();
     }
 };
+
+export const getVentasByMonthAndYear = async (month, year) => {
+    const query = `SELECT obtener_ingresos_por_mes_y_anio($1, $2);`;
+    const values = [month, year];
+    const result = await db.query(query, values);
+    return result.rows[0];
+};
+
+export const getAllBoletosVendidos = async (month, year) => {
+    const query = `SELECT obtener_total_boletos_vendidos($1, $2);`;
+    const values = [month, year];
+    const result = await db.query(query, values);
+    return result.rows[0];
+};
+

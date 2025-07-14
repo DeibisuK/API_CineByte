@@ -56,3 +56,8 @@ export const updateEstadoFuncion = async (id, estado) => {
     );
     return result.rows[0];
 };
+
+export const getAsientos = async () => {
+    const result = await db.query('SELECT COUNT(*) as Total FROM asientos WHERE tipo = \'normal\';');
+    return result.rows[0];
+}

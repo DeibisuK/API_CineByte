@@ -27,3 +27,7 @@ export const changeFuncionEstado = async (id, estado) => {
     return await model.updateEstadoFuncion(id, estado);
 };
 
+export const getAsientos = async () => {
+    return await model.getAsientos();
+}   
+

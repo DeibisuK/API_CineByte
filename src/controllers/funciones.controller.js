@@ -107,3 +107,13 @@ export const updateEstadoFuncion = async (req, res) => {
         res.status(500).json({ error: 'Error interno del servidor' });
     }
 }
+
+export const getAsientos = async (req, res) => {
+    try {
+        const asientos = await service.getAsientos();
+        res.json(asientos);
+    } catch (err) {
+        console.error('Error al obtener asientos:', err);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+};
