@@ -43,7 +43,7 @@ export const findByIdAndUser = async (id, firebase_uid) => {
     const client = await db.connect();
     try {
         const query = 'SELECT * FROM ventas WHERE id_venta = $1 AND firebase_uid = $2';
-        const result = await client.query(query, [id, firebase_uid]); 
+        const result = await client.query(query, [id, firebase_uid]);
         return result.rows[0];
     } finally {
         client.release();
@@ -60,7 +60,7 @@ export const updateEstado = async (id, estado) => {
             WHERE id_venta = $2
             RETURNING *
         `;
-        const result = await client.query(query, [estado, id]);       
+        const result = await client.query(query, [estado, id]);
         return result.rows[0];
     } finally {
         client.release();
@@ -74,20 +74,21 @@ export const getHistorialByUser = async (firebase_uid, limit = 10, offset = 0) =
         const query = `
             SELECT
                 v.*,
-                p.titulo as pelicula_titulo,
-                s.nombre as sala_nombre,
-                f.fecha_hora_inicio as fecha_funcion,
-                EXTRACT(HOUR FROM f.fecha_hora_inicio) || ':' || LPAD(EXTRACT(MINUTE FROM f.fecha_hora_inicio)::text, 2, '0') as hora_funcion,
-                array_agg(va.numero_asiento) as asientos
+                p.titulo AS pelicula_titulo,
+                s.nombre AS sala_nombre,
+                f.fecha_hora_inicio AS fecha_funcion,
+                EXTRACT(HOUR FROM f.fecha_hora_inicio) || ':' || LPAD(EXTRACT(MINUTE FROM f.fecha_hora_inicio)::text, 2, '0') AS hora_funcion,
+                array_agg(a.fila || a.columna ORDER BY a.fila, a.columna) AS asientos
             FROM ventas v
-            LEFT JOIN funciones f ON v.id_funcion = f.id_funcion      
-            LEFT JOIN peliculas p ON f.id_pelicula = p.id_pelicula    
+            LEFT JOIN funciones f ON v.id_funcion = f.id_funcion
+            LEFT JOIN peliculas p ON f.id_pelicula = p.id_pelicula
             LEFT JOIN salas s ON f.id_sala = s.id_sala
             LEFT JOIN venta_asientos va ON v.id_venta = va.id_venta
+            LEFT JOIN asientos a ON va.id_asiento = a.id_asiento
             WHERE v.firebase_uid = $1
             GROUP BY v.id_venta, p.titulo, s.nombre, f.fecha_hora_inicio
             ORDER BY v.created_at DESC
-            LIMIT $2 OFFSET $3
+            LIMIT $2 OFFSET $3;
         `;
         const result = await client.query(query, [firebase_uid, limit, offset]);
         return result.rows;
