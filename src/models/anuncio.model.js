@@ -14,9 +14,7 @@ export const findById = async (id) => {
 export const findActive = async () => {
     const result = await db.query(`
       SELECT * FROM anuncios 
-      WHERE estado = 'Activo' 
-      AND fecha_inicio <= NOW() 
-      AND fecha_fin >= NOW() 
+      WHERE estado = 'Activo'
       ORDER BY creado_en DESC
     `);
     return result.rows;
