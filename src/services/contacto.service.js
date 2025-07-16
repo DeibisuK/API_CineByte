@@ -154,7 +154,7 @@ export const enviarCorreoConfirmacionCompra = async ({
         </table>
       </div>
 
-      <div style="background:rgb(255, 59, 59); border-radius: 8px; padding: 15px; margin: 20px 0;">
+      <div style="background:rgba(56, 75, 116, 1); border-radius: 8px; padding: 15px; margin: 20px 0;">
         <h4 style="color: #fff; margin-top: 0;">📋 Instrucciones Importantes</h4>
         <ul style="color: #fff; margin: 0; padding-left: 20px;">
           <li>Llega al cine 15 minutos antes del inicio de la función</li>
