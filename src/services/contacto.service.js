@@ -4,14 +4,14 @@ export const enviarCorreo = async ({ nombres, apellidos, telefono, email, cine, 
   let transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'garystevenbarreirozambrano@gmail.com',
-      pass: 'hzoi ycly zvix btve'
+      user: 'noreplycinebyte@gmail.com',
+      pass: 'ykga uoxf eiyu caic'
     }
   });
 
   const mailOptions = {
     from: email,
-    to: 'garystevenbarreirozambrano@gmail.com',
+    to: 'noreplycinebyte@gmail.com',
     subject: `Nuevo mensaje de contacto (${tipo})`,
     html: `
     <div style="font-family: Arial, sans-serif; max-width: 540px; margin: auto; border: 1px solid #444; border-radius: 12px; padding: 28px; background:rgb(35, 35, 35);">
@@ -79,8 +79,8 @@ export const enviarCorreoConfirmacionCompra = async ({
   let transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'garystevenbarreirozambrano@gmail.com',
-      pass: 'hzoi ycly zvix btve'
+      user: 'noreplycinebyte@gmail.com',
+      pass: 'ykga uoxf eiyu caic'
     }
   });
 
@@ -93,7 +93,7 @@ export const enviarCorreoConfirmacionCompra = async ({
   });
 
   const mailOptions = {
-    from: 'garystevenbarreirozambrano@gmail.com',
+    from: 'noreplycinebyte@gmail.com',
     to: emailCliente,
     subject: '¡Confirmación de compra - CineByte!',
     html: `
@@ -170,7 +170,7 @@ export const enviarCorreoConfirmacionCompra = async ({
       
       <p style="color: #aaa; font-size: 12px; margin-top: 24px; text-align:center;">
         Este correo fue enviado automáticamente por el sistema de <span style="color:#f7cb5a;">CineByte</span>.
-        <br>Si tienes alguna pregunta, contáctanos a garystevenbarreirozambrano@gmail.com
+        <br>Si tienes alguna pregunta, contáctanos a noreplycinebyte@gmail.com
       </p>
     </div>
   `
