@@ -1016,25 +1016,25 @@ export const generarFacturaPDF = async (ventaId, firebase_uid) => {
             }, []);
         
         // === ENVIAR CORREO DE CONFIRMACIÓN ===
-        try {
-            if (datosUsuario.email && datosUsuario.email !== 'N/A') {
-                await enviarCorreoConfirmacionCompra({
-                    emailCliente: datosUsuario.email,
-                    nombreCliente: datosUsuario.nombre,
-                    pelicula: ventaData.pelicula_titulo,
-                    sala: ventaData.sala_nombre,
-                    fechaFuncion: ventaData.fecha_funcion,
-                    horarioInicio: ventaData.hora_inicio,
-                    horarioFin: ventaData.hora_fin,
-                    asientos: asientos,
-                    total: ventaData.total || ventaData.factura_total || 0,
-                    numeroFactura: ventaData.numero_factura || ventaData.id_venta
-                });
-            }
-        } catch (emailError) {
-            console.warn('Error enviando correo de confirmación:', emailError.message);
-            // No lanzar error, continuar con la generación del PDF
-        }
+        // try {
+        //     if (datosUsuario.email && datosUsuario.email !== 'N/A') {
+        //         await enviarCorreoConfirmacionCompra({
+        //             emailCliente: datosUsuario.email,
+        //             nombreCliente: datosUsuario.nombre,
+        //             pelicula: ventaData.pelicula_titulo,
+        //             sala: ventaData.sala_nombre,
+        //             fechaFuncion: ventaData.fecha_funcion,
+        //             horarioInicio: ventaData.hora_inicio,
+        //             horarioFin: ventaData.hora_fin,
+        //             asientos: asientos,
+        //             total: ventaData.total || ventaData.factura_total || 0,
+        //             numeroFactura: ventaData.numero_factura || ventaData.id_venta
+        //         });
+        //     }
+        // } catch (emailError) {
+        //     console.warn('Error enviando correo de confirmación:', emailError.message);
+        //     // No lanzar error, continuar con la generación del PDF
+        // }
         
         // === GENERAR PDF CON CONFIGURACIÓN OPTIMIZADA ===
         const pdfBuffer = await generarFacturaPDFBuffer({

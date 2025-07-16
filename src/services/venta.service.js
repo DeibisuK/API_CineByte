@@ -100,7 +100,46 @@ class VentaService {
 
             // 7. Actualizar estado de la venta a confirmada
             console.log('Actualizando estado de venta a confirmada...');
+
             await VentaModel.updateEstado(venta.id_venta, 'confirmada');
+
+            // === ENVIAR CORREO DE CONFIRMACIÓN ===
+            try {
+                // Obtener datos del usuario de Firebase
+                let datosUsuario = {
+                    nombre: 'Cliente',
+                    email: 'N/A'
+                };
+                try {
+                    const admin = await import('../config/firebase.js').then(m => m.default);
+                    const usuarioFirebase = await admin.auth().getUser(firebase_uid);
+                    datosUsuario = {
+                        nombre: usuarioFirebase.displayName || usuarioFirebase.email?.split('@')[0] || 'Cliente',
+                        email: usuarioFirebase.email || 'N/A'
+                    };
+                } catch (error) {
+                    console.warn('Error obteniendo datos de Firebase, usando valores por defecto:', error.message);
+                }
+
+                if (datosUsuario.email && datosUsuario.email !== 'N/A') {
+                    const { enviarCorreoConfirmacionCompra } = await import('./contacto.service.js');
+                    await enviarCorreoConfirmacionCompra({
+                        emailCliente: datosUsuario.email,
+                        nombreCliente: datosUsuario.nombre,
+                        pelicula: factura.pelicula_titulo || 'N/A',
+                        sala: factura.sala_nombre || 'N/A',
+                        fechaFuncion: factura.fecha_funcion || new Date(),
+                        horarioInicio: factura.hora_inicio || 'N/A',
+                        horarioFin: factura.hora_fin || 'N/A',
+                        asientos: asientos.map(a => ({ numero_asiento: a.numero_asiento, precio_unitario: a.precio_asiento })),
+                        total: factura.total || 0,
+                        numeroFactura: factura.numero_factura || factura.venta_id
+                    });
+                }
+            } catch (emailError) {
+                console.warn('Error enviando correo de confirmación:', emailError.message);
+                // No lanzar error, continuar con la venta
+            }
 
             await client.query('COMMIT');
             console.log('Transacción completada exitosamente');
