@@ -8,26 +8,30 @@ export const create = async (facturaData) => {
             INSERT INTO facturas (
                 id_venta, numero_factura, cliente_nombre, cliente_email, cliente_telefono,
                 pelicula_titulo, sala_nombre, fecha_funcion, hora_inicio, hora_fin, idioma,
-                subtotal, iva_valor, total
+                subtotal, iva_valor, total,
+                promocion_aplicada, codigo_cupon_usado, descuento_aplicado
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
             RETURNING *
         `;
         const values = [
             facturaData.venta_id,
             facturaData.numero_factura,
-            facturaData.cliente_nombre || 'Cliente Genérico',
-            facturaData.cliente_email || 'cliente@email.com',
-            facturaData.cliente_telefono || '0000000000',
-            facturaData.pelicula_titulo || 'Película',
-            facturaData.sala_nombre || 'Sala',
-            facturaData.fecha_funcion || new Date(),
-            facturaData.hora_inicio || '00:00:00',
-            facturaData.hora_fin || '02:00:00',
-            facturaData.idioma || 'Español',
+            facturaData.cliente_nombre, // Ya no usar valores por defecto
+            facturaData.cliente_email,
+            facturaData.cliente_telefono,
+            facturaData.pelicula_titulo,
+            facturaData.sala_nombre,
+            facturaData.fecha_funcion,
+            facturaData.hora_inicio,
+            facturaData.hora_fin,
+            facturaData.idioma,
             facturaData.subtotal,
-            facturaData.iva,
-            facturaData.total
+            facturaData.iva_valor || facturaData.iva, // Manejar ambos nombres
+            facturaData.total, // Ya es el total final con descuento aplicado
+            facturaData.promocion_aplicada || null,
+            facturaData.codigo_cupon_usado || null,
+            facturaData.descuento_aplicado || 0.00
         ];
         
         const result = await client.query(query, values);

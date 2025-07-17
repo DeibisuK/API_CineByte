@@ -900,6 +900,7 @@ export const generarFacturaPDF = async (ventaId, firebase_uid) => {
                 v.iva,
                 v.total,
                 v.estado as venta_estado,
+                v.descuento_aplicado,
                 
                 -- Datos de la factura
                 f.id_factura,
@@ -917,6 +918,11 @@ export const generarFacturaPDF = async (ventaId, firebase_uid) => {
                 f.subtotal as factura_subtotal,
                 f.iva_valor,
                 f.total as factura_total,
+                
+                -- Datos de descuentos y promociones
+                f.promocion_aplicada,
+                f.codigo_cupon_usado,
+                f.descuento_aplicado as factura_descuento_aplicado,
                 
                 -- Datos del pago
                 p.id_pago,
@@ -1110,11 +1116,11 @@ const generarFacturaPDFBuffer = async (data) => {
             const tableHeaderHeight = 25;
             const itemsCount = Math.max(data.detalles?.length || 0, data.asientos?.length || 0, 1);
             const itemsHeight = itemsCount * 25;
-            const totalesHeight = 80;
+            const calculatedTotalesHeight = 80;
             const footerHeight = 80;
             
             const totalContentHeight = headerHeight + infoSectionHeight + funcionHeight + 
-                                     tableHeaderHeight + itemsHeight + totalesHeight + footerHeight;
+                                     tableHeaderHeight + itemsHeight + calculatedTotalesHeight + footerHeight;
             
             // Color del fondo del documento
             doc.rect(0, 0, pageWidth, pageHeight).fill('#F8F9FA');
@@ -1258,19 +1264,62 @@ const generarFacturaPDFBuffer = async (data) => {
             // === TOTALES ===
             currentY += 20;
             
-            roundedRect(pageWidth - 220, currentY, 180, 80, 5).fill(colors.cardBg);
+            // Calcular valores con soporte para descuentos
+            const subtotal = data.venta.subtotal || data.venta.factura_subtotal || 0;
+            const iva = data.venta.iva || data.venta.iva_valor || 0;
+            const descuento = data.venta.factura_descuento_aplicado || data.venta.descuento_aplicado || 0;
+            const total = data.venta.total || data.venta.factura_total || 0; // Total final ya con descuento
+            const totalOriginal = descuento > 0 ? (total + descuento) : total; // Calcular total original si hay descuento
+            const codigoCupon = data.venta.codigo_cupon_usado || null;
+            const promocionAplicada = data.venta.promocion_aplicada || null;
+            
+            // Determinar altura del contenedor según si hay descuento o promoción
+            const tieneDescuento = descuento > 0;
+            const tienePromocion = promocionAplicada || codigoCupon;
+            const alturaAdicional = tieneDescuento ? 20 : 0;
+            const alturaPromocion = tienePromocion ? 20 : 0;
+            const totalesHeight = 80 + alturaAdicional + alturaPromocion;
+            
+            roundedRect(pageWidth - 220, currentY, 180, totalesHeight, 5).fill(colors.cardBg);
+            
+            let offsetY = 15;
+            
+            // Información de promoción aplicada
+            if (tienePromocion) {
+                doc.fillColor('#2563eb').font('Helvetica-Bold').fontSize(8)
+                   .text(`Promoción aplicada:`, pageWidth - 210, currentY + offsetY);
+                
+                if (codigoCupon) {
+                    doc.fillColor('#2563eb').font('Helvetica').fontSize(8)
+                       .text(`Cupón: ${codigoCupon}`, pageWidth - 120, currentY + offsetY);
+                } else if (promocionAplicada) {
+                    doc.fillColor('#2563eb').font('Helvetica').fontSize(8)
+                       .text(`${promocionAplicada}`, pageWidth - 120, currentY + offsetY);
+                }
+                offsetY += 20;
+            }
                 
             doc.fillColor(colors.primary).font('Helvetica').fontSize(10)
-               .text(`Subtotal:`, pageWidth - 210, currentY + 15)
-               .text(`$${(data.venta.subtotal || data.venta.factura_subtotal || 0).toLocaleString()}`, pageWidth - 120, currentY + 15)
-               .text(`IVA (19%):`, pageWidth - 210, currentY + 35)
-               .text(`$${(data.venta.iva || data.venta.iva_valor || 0).toLocaleString()}`, pageWidth - 120, currentY + 35);
+               .text(`Subtotal:`, pageWidth - 210, currentY + offsetY)
+               .text(`$${subtotal.toLocaleString()}`, pageWidth - 120, currentY + offsetY)
+               .text(`IVA (12%):`, pageWidth - 210, currentY + offsetY + 20)
+               .text(`$${iva.toLocaleString()}`, pageWidth - 120, currentY + offsetY + 20);
+            
+            offsetY += 40;
+            
+            // Mostrar descuento si existe
+            if (tieneDescuento) {
+                doc.fillColor('#e53e3e').font('Helvetica').fontSize(10)
+                   .text(`Descuento:`, pageWidth - 210, currentY + offsetY)
+                   .text(`-$${descuento.toLocaleString()}`, pageWidth - 120, currentY + offsetY);
+                offsetY += 20;
+            }
             
             doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.accent)
-               .text(`TOTAL:`, pageWidth - 210, currentY + 55)
-               .text(`$${(data.venta.total || data.venta.factura_total || 0).toLocaleString()}`, pageWidth - 120, currentY + 55);
+               .text(`TOTAL:`, pageWidth - 210, currentY + offsetY)
+               .text(`$${total.toLocaleString()}`, pageWidth - 120, currentY + offsetY);
             
-            currentY += 100;
+            currentY += totalesHeight + 20;
 
             // === FOOTER SOLO SI HAY ESPACIO ===
             const footerY = pageHeight - 80;

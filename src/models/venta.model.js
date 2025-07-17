@@ -5,8 +5,20 @@ export const create = async (ventaData) => {
     const client = await db.connect();
     try {
         const query = `
-            INSERT INTO ventas (firebase_uid, id_funcion, cantidad_boletos, subtotal, iva, total, estado, fecha_venta)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
+            INSERT INTO ventas (
+                firebase_uid, 
+                id_funcion, 
+                cantidad_boletos, 
+                subtotal, 
+                iva, 
+                total, 
+                estado, 
+                fecha_venta,
+                promocion_id,
+                codigo_cupon,
+                descuento_aplicado
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, $8, $9, $10)
             RETURNING *
         `;
         const values = [
@@ -15,8 +27,11 @@ export const create = async (ventaData) => {
             ventaData.total_asientos,
             ventaData.subtotal,
             ventaData.iva,
-            ventaData.total,
-            ventaData.estado || 'pendiente'
+            ventaData.total_final || ventaData.total, // Total ya con descuento aplicado
+            ventaData.estado || 'pendiente',
+            ventaData.promocion_id || null,
+            ventaData.codigo_cupon || null,
+            ventaData.descuento_aplicado || 0.00
         ];
 
         const result = await client.query(query, values);

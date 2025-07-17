@@ -270,6 +270,30 @@ class VentaController {
         }
     }
 
+    async aplicarPromocionesAutomaticas(req, res) {
+        try {
+            const { firebase_uid, total_venta, dia_compra } = req.body;
+
+            if (!firebase_uid || !total_venta) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'firebase_uid y total_venta son requeridos'
+                });
+            }
+
+            const resultado = await ventaService.aplicarPromocionesAutomaticas(firebase_uid, total_venta, dia_compra);
+            
+            res.json(resultado);
+            
+        } catch (error) {
+            console.error('Error en aplicarPromocionesAutomaticas:', error);
+            res.status(500).json({
+                success: false,
+                message: error.message || 'Error interno del servidor'
+            });
+        }
+    }
+
     // Obtener asientos disponibles para una función específica
     async obtenerAsientosDisponiblesPorFuncion(req, res) {
         try {

@@ -5,8 +5,8 @@ export const create = async (detalleData) => {
     const client = await db.connect();
     try {
         const query = `
-            INSERT INTO factura_detalles (id_factura, descripcion, cantidad, precio_unitario, subtotal)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO factura_detalles (id_factura, descripcion, cantidad, precio_unitario, subtotal, asiento_fila, asiento_numero)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING *
         `;
         const values = [
@@ -14,7 +14,9 @@ export const create = async (detalleData) => {
             detalleData.descripcion,
             detalleData.cantidad,
             detalleData.precio_unitario,
-            detalleData.subtotal
+            detalleData.subtotal,
+            detalleData.asiento_fila || null,
+            detalleData.asiento_numero || null
         ];
         
         const result = await client.query(query, values);
@@ -32,19 +34,21 @@ export const createMultiple = async (factura_id, detalles) => {
         const placeholders = [];
         
         detalles.forEach((detalle, index) => {
-            const baseIndex = index * 5;
-            placeholders.push(`($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5})`);
+            const baseIndex = index * 7; // Cambié de 5 a 7 campos
+            placeholders.push(`($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, $${baseIndex + 5}, $${baseIndex + 6}, $${baseIndex + 7})`);
             values.push(
                 factura_id,
                 detalle.descripcion,
                 detalle.cantidad,
                 detalle.precio_unitario,
-                detalle.subtotal
+                detalle.subtotal,
+                detalle.asiento_fila || null,
+                detalle.asiento_numero || null
             );
         });
         
         const query = `
-            INSERT INTO factura_detalles (id_factura, descripcion, cantidad, precio_unitario, subtotal)
+            INSERT INTO factura_detalles (id_factura, descripcion, cantidad, precio_unitario, subtotal, asiento_fila, asiento_numero)
             VALUES ${placeholders.join(', ')}
             RETURNING *
         `;

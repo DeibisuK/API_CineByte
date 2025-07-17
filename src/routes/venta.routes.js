@@ -24,6 +24,9 @@ router.post('/resumen', ventaController.calcularResumen);
 // Validar cupón de descuento
 router.post('/validar-cupon', ventaController.validarCupon);
 
+// Aplicar promociones automáticas
+router.post('/promociones-automaticas', ventaController.aplicarPromocionesAutomaticas);
+
 // Obtener asientos disponibles para una función específica
 router.get('/asientos-disponibles/:id_sala/:id_funcion', ventaController.obtenerAsientosDisponiblesPorFuncion);
 
