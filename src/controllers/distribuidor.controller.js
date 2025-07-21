@@ -78,12 +78,7 @@ export const remove = async (req, res) => {
     console.error('Error al eliminar distribuidor:', err);
     const errorMsg = (err.message || err.detail || err.toString() || '').toLowerCase();
     if (errorMsg.includes('violates foreign key constraint')) {
-      let tablaRelacionada = 'otra tabla';
-      const match = errorMsg.match(/on table "([a-zA-Z0-9_]+)"/);
-      if (match && match[1]) {
-        tablaRelacionada = match[1];
-      }
-      return res.status(400).json({ error: `No se puede eliminar el distribuidor porque está relacionado con la tabla '${tablaRelacionada}'.` });
+      return res.status(400).json({ error: 'No se puede eliminar el distribuidor porque está siendo utilizado en otra tabla.' });
     }
     if (err.code === '22P02') {
       return res.status(400).json({ error: 'ID de distribuidor inválido.' });
