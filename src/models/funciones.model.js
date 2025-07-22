@@ -12,27 +12,16 @@ export const findById = async (id) => {
 
 export const insert = async ({ id_pelicula, id_sala, fecha_hora_inicio, precio_funcion, id_idioma, trailer_url, estado, fecha_hora_fin }) => {
 
-    const fecha_inicio_utc = new Date(fecha_hora_inicio);
-    const fecha_inicio_str = fecha_inicio_utc.toISOString().replace('T', ' ').replace('Z', '').slice(0, 19); 
-    // 'YYYY-MM-DD HH:mm:ss'
-    const fecha_fin_utc = new Date(fecha_hora_fin);
-    const fecha_fin_str = fecha_fin_utc.toISOString().replace('T', ' ').replace('Z', '').slice(0, 19); 
-    // 'YYYY-MM-DD HH:mm:ss'
-
     const result = await db.query('INSERT INTO funciones (id_pelicula, id_sala, fecha_hora_inicio, precio_funcion, id_idioma, trailer_url, estado, fecha_hora_fin) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *'
-        , [id_pelicula, id_sala, fecha_inicio_str, precio_funcion, id_idioma, trailer_url, estado, fecha_fin_str]);
+        , [id_pelicula, id_sala, fecha_hora_inicio, precio_funcion, id_idioma, trailer_url, estado, fecha_hora_fin]);
     return result.rows[0];
 };
 
 export const update = async (id, { id_pelicula, id_sala, fecha_hora_inicio, precio_funcion, id_idioma, trailer_url, estado, fecha_hora_fin }) => {
-    
-    const fecha_inicio_utc = new Date(fecha_hora_inicio);
-    const fecha_inicio_str = fecha_inicio_utc.toISOString().replace('T', ' ').replace('Z', '').slice(0, 19); // 'YYYY-MM-DD HH:mm:ss'
-    const fecha_fin_utc = new Date(fecha_hora_fin);
-    const fecha_fin_str = fecha_fin_utc.toISOString().replace('T', ' ').replace('Z', '').slice(0, 19); // 'YYYY-MM-DD HH:mm:ss'
+
     const result = await db.query(
         'UPDATE funciones SET id_pelicula = $1, id_sala = $2, fecha_hora_inicio = $3, precio_funcion = $4, id_idioma = $5, trailer_url = $6, estado = $7, fecha_hora_fin = $8 WHERE id_funcion = $9 RETURNING *',
-        [id_pelicula, id_sala, fecha_inicio_str, precio_funcion, id_idioma, trailer_url, estado, fecha_fin_str, id]
+        [id_pelicula, id_sala, fecha_hora_inicio, precio_funcion, id_idioma, trailer_url, estado, fecha_hora_fin, id]
     );
     return result.rows[0];
 }
